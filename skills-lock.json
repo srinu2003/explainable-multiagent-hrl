@@ -7,6 +7,12 @@
       "skillPath": "skills/docx/SKILL.md",
       "computedHash": "150be87ff7b18f273ad07da303adb1cf2ca21cc3e76db7a2cf0373405178a278"
     },
+    "mermaid": {
+      "source": "WH-2099/mermaid-skill",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/mermaid/SKILL.md",
+      "computedHash": "6032097ca52ef1510e1a4bcc53045eaa9544c91c2e6793f9208a8dd49bc88cea"
+    },
     "pdf": {
       "source": "anthropics/skills",
       "sourceType": "github",
