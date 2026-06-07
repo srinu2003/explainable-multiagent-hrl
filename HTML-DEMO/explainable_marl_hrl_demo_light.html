@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Explainable Multi-Agent HRL Framework</title>
+
+<!-- MathJax for LaTeX rendering -->
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['\\(','\\)']],
+    displayMath: [['\\[','\\]']],
+    packages: {'[+]': ['ams']}
+  },
+  options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,900;1,9..144,400&display=swap');
+
+:root {
+  --bg:       #f7f4ef;
+  --surface:  #ffffff;
+  --surface2: #f0ece4;
+  --border:   #d6cfc3;
+  --border2:  #c2b8a9;
+  --accent1:  #1a6b8a;   /* teal-navy */
+  --accent2:  #6b3fa0;   /* violet */
+  --accent3:  #b45309;   /* amber-brown */
+  --accent4:  #1e7b4b;   /* forest green */
+  --accent1l: #e8f4f8;
+  --accent2l: #f0eaf8;
+  --accent3l: #fdf3e3;
+  --accent4l: #e6f4ed;
+  --text:     #1c1917;
+  --text2:    #44403c;
+  --muted:    #78716c;
+  --shadow:   0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Subtle paper texture */
+body::before {
+  content:'';
+  position: fixed; inset:0;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(26,107,138,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(107,63,160,0.04) 0%, transparent 50%);
+  pointer-events: none; z-index:0;
+}
+
+.container { max-width:1200px; margin:0 auto; padding:0 28px; position:relative; z-index:1; }
+
+/* ── HEADER ── */
+header {
+  padding: 52px 0 36px;
+  text-align: center;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 0;
+}
+header .badge {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent1);
+  border: 1.5px solid var(--accent1);
+  padding: 4px 14px;
+  margin-bottom: 22px;
+  border-radius: 2px;
+  background: var(--accent1l);
+}
+header h1 {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(24px, 4vw, 44px);
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+}
+header h1 span { color: var(--accent1); }
+header .authors {
+  font-family: 'Crimson Pro', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+header p {
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin: 0 0 36px;
+  border-bottom: 2px solid var(--border);
+  flex-wrap: wrap;
+}
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 14px 22px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.tab-btn:hover { color: var(--accent1); }
+.tab-btn.active {
+  color: var(--accent1);
+  border-bottom-color: var(--accent1);
+  font-weight: 500;
+}
+
+/* ── SECTIONS ── */
+.section { display:none; padding-top: 32px; }
+.section.active { display:block; animation: fadeIn .3s ease; }
+@keyframes fadeIn { from {opacity:0;transform:translateY(6px)} to {opacity:1;transform:translateY(0)} }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 28px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+}
+.card.cyan::before   { background: linear-gradient(90deg, var(--accent1), transparent); }
+.card.purple::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+.card.amber::before  { background: linear-gradient(90deg, var(--accent3), transparent); }
+.card.green::before  { background: linear-gradient(90deg, var(--accent4), transparent); }
+
+.card-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.cyan   .card-title { color: var(--accent1); }
+.purple .card-title { color: var(--accent2); }
+.amber  .card-title { color: var(--accent3); }
+.green  .card-title { color: var(--accent4); }
+
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+@media(max-width:768px){ .grid-2,.grid-3{ grid-template-columns:1fr; } }
+
+.section-gap { margin-bottom: 20px; }
+
+/* ── ARCH LAYERS ── */
+.arch-layer {
+  display:flex; align-items:center; gap:14px;
+  padding: 16px 18px; border-radius:6px;
+  cursor:pointer; transition:all .2s;
+  border: 1px solid;
+}
+.arch-layer:hover { transform: translateX(5px); box-shadow: var(--shadow); }
+.arch-layer.layer-1 { background:var(--accent1l); border-color: rgba(26,107,138,0.25); }
+.arch-layer.layer-2 { background:var(--accent2l); border-color: rgba(107,63,160,0.25); margin-left:36px; }
+.arch-layer.layer-3 { background:var(--accent3l); border-color: rgba(180,83,9,0.25);   margin-left:72px; }
+.arch-layer.layer-4 { background:var(--accent4l); border-color: rgba(30,123,75,0.25);  margin-left:36px; }
+.layer-arrow { text-align:center; color:var(--border2); font-size:16px; padding:4px 0 4px 56px; }
+.layer-icon  { font-size:20px; min-width:28px; }
+.layer-info  { flex:1; }
+.layer-name  {
+  font-family:'Fraunces',serif; font-weight:700; font-size:14px; margin-bottom:3px;
+}
+.layer-1 .layer-name { color:var(--accent1); }
+.layer-2 .layer-name { color:var(--accent2); }
+.layer-3 .layer-name { color:var(--accent3); }
+.layer-4 .layer-name { color:var(--accent4); }
+.layer-desc { font-size:12px; color:var(--muted); line-height:1.6; }
+.layer-tag {
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:1px;
+  text-transform:uppercase; padding:3px 8px; border-radius:3px; white-space:nowrap;
+}
+.layer-1 .layer-tag { background:rgba(26,107,138,0.12); color:var(--accent1); }
+.layer-2 .layer-tag { background:rgba(107,63,160,0.12); color:var(--accent2); }
+.layer-3 .layer-tag { background:rgba(180,83,9,0.12);   color:var(--accent3); }
+.layer-4 .layer-tag { background:rgba(30,123,75,0.12);  color:var(--accent4); }
+
+/* ── SIMULATION ── */
+#sim-canvas-wrap {
+  background: var(--surface2);
+  border:1px solid var(--border);
+  border-radius:6px; padding:14px; margin-bottom:14px;
+}
+#sim-canvas { width:100%; display:block; border-radius:3px; }
+.sim-controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+.sim-btn {
+  background:transparent; border:1.5px solid var(--accent1); color:var(--accent1);
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px;
+  text-transform:uppercase; padding:8px 18px; cursor:pointer; border-radius:3px;
+  transition:all .2s;
+}
+.sim-btn:hover { background:var(--accent1); color:white; }
+.sim-btn.running { background:var(--accent3); border-color:var(--accent3); color:white; }
+
+.explanation-feed {
+  background: var(--surface2);
+  border:1px solid var(--border);
+  border-left:3px solid var(--accent1);
+  border-radius:4px; padding:14px;
+  height:120px; overflow-y:auto;
+  font-family:'DM Mono',monospace;
+  font-size:10px; line-height:1.9; color:var(--muted);
+}
+.explanation-feed .log-entry .agent  { color:var(--accent1); font-weight:500; }
+.explanation-feed .log-entry .action { color:var(--accent3); }
+.explanation-feed .log-entry .reason { color:var(--accent4); }
+
+/* ── METRIC BARS ── */
+.metric-row { display:flex; align-items:center; gap:14px; margin-bottom:13px; }
+.metric-label { font-size:12px; color:var(--text2); min-width:200px; font-family:'Crimson Pro',serif; }
+.metric-bar-wrap { flex:1; background:var(--surface2); height:7px; border-radius:4px; overflow:hidden; border:1px solid var(--border); }
+.metric-bar { height:100%; border-radius:4px; transition:width 1s cubic-bezier(.22,1,.36,1); width:0; }
+.metric-value { font-family:'DM Mono',monospace; font-size:11px; font-weight:500; min-width:44px; text-align:right; }
+.bar-cyan   { background: linear-gradient(90deg, var(--accent1), #38a3c4); }
+.bar-purple { background: linear-gradient(90deg, var(--accent2), #9b6dd1); }
+.bar-amber  { background: linear-gradient(90deg, var(--accent3), #d97706); }
+.bar-green  { background: linear-gradient(90deg, var(--accent4), #2e9d64); }
+
+/* ── CHART ── */
+#chart-canvas { width:100%; display:block; }
+.chart-legend { display:flex; gap:20px; flex-wrap:wrap; margin-top:12px; font-size:12px; color:var(--muted); font-family:'Crimson Pro',serif; }
+.legend-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+
+/* ── EQUATION BOXES ── */
+.eq-box {
+  background: var(--surface2);
+  border:1px solid var(--border);
+  border-left:3px solid var(--accent1);
+  border-radius:4px; padding:16px 20px;
+  margin-bottom:12px;
+}
+.eq-label {
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:1.5px;
+  text-transform:uppercase; color:var(--accent1); margin-bottom:8px;
+}
+.eq-body { font-size:15px; text-align:center; padding:6px 0; }
+.eq-desc  { font-size:11px; color:var(--muted); margin-top:6px; line-height:1.7; font-style:italic; }
+
+/* ── ALGO STEPS ── */
+.algo-step {
+  display:flex; gap:14px; padding:13px 10px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer; transition:background .15s; border-radius:4px;
+}
+.algo-step:hover { background:var(--surface2); }
+.algo-step:last-child { border-bottom:none; }
+.step-num { font-family:'Fraunces',serif; font-weight:900; font-size:20px; color:var(--border2); min-width:32px; line-height:1; }
+.algo-step.active .step-num { color:var(--accent1); }
+.step-content { flex:1; }
+.step-title  { font-family:'Crimson Pro',serif; font-size:14px; font-weight:700; color:var(--text); margin-bottom:3px; }
+.step-detail { font-size:12px; color:var(--muted); line-height:1.75; display:none; }
+.algo-step.active .step-detail { display:block; }
+.step-badge {
+  font-family:'DM Mono',monospace; font-size:9px; padding:2px 8px;
+  border-radius:3px; text-transform:uppercase; letter-spacing:1px;
+  height:fit-content; margin-top:3px; white-space:nowrap;
+}
+.badge-hl  { background:var(--accent1l); color:var(--accent1); }
+.badge-ll  { background:var(--accent2l); color:var(--accent2); }
+.badge-xai { background:var(--accent4l); color:var(--accent4); }
+.badge-env { background:var(--accent3l); color:var(--accent3); }
+
+/* ── COMPARISON TABLE ── */
+.comp-table { width:100%; border-collapse:collapse; font-size:13px; }
+.comp-table th {
+  background: var(--surface2); color:var(--muted);
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:1.5px;
+  text-transform:uppercase; padding:12px 14px; text-align:left;
+  border-bottom:2px solid var(--border);
+}
+.comp-table td { padding:13px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.comp-table tr:last-child td { border-bottom:none; }
+.comp-table tr.highlight td { background:var(--accent1l); }
+.comp-table tr.highlight td:first-child { border-left:3px solid var(--accent1); }
+.chip {
+  display:inline-block; font-family:'DM Mono',monospace;
+  font-size:9px; padding:3px 9px; border-radius:20px; letter-spacing:.5px;
+}
+.chip-low  { background:rgba(220,38,38,0.1);   color:#b91c1c; }
+.chip-med  { background:var(--accent3l); color:var(--accent3); }
+.chip-high { background:var(--accent4l); color:var(--accent4); }
+
+/* ── PSEUDOCODE ── */
+.pseudocode {
+  background: var(--surface2); border:1px solid var(--border);
+  border-radius:4px; padding:18px 20px;
+  font-family:'DM Mono',monospace; font-size:10px;
+  line-height:2; color:var(--text2); overflow-x:auto;
+}
+.kw  { color:var(--accent2); font-weight:500; }
+.fn  { color:var(--accent1); }
+.cm  { color:var(--border2); font-style:italic; }
+.vr  { color:var(--accent3); }
+
+/* ── MISC ── */
+.sub-title {
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px;
+  text-transform:uppercase; color:var(--muted); margin-bottom:14px;
+}
+.divider { height:1px; background:var(--border); margin:18px 0; }
+
+footer {
+  text-align:center; padding:40px 0 32px;
+  border-top:1px solid var(--border); margin-top:40px;
+  font-family:'DM Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:1px;
+}
+
+/* MathJax override for inline display */
+.MathJax { font-size: 1em !important; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="badge">Research Paper Visualization</div>
+    <h1>Explainable Multi-Agent <span>AI</span><br>for Autonomous System Coordination</h1>
+    <div class="authors">Tammireddy &amp; Singh · MLRITM, Hyderabad</div>
+    <p>Hierarchical Reinforcement Learning combined with Explainable AI to make autonomous coordination transparent, trustworthy, and efficient.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('architecture',this)">Architecture</button>
+    <button class="tab-btn" onclick="showTab('simulation',this)">Live Simulation</button>
+    <button class="tab-btn" onclick="showTab('algorithm',this)">Algorithm</button>
+    <button class="tab-btn" onclick="showTab('results',this)">Results</button>
+    <button class="tab-btn" onclick="showTab('compare',this)">Comparison</button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TAB 1 · ARCHITECTURE
+  ══════════════════════════════════════ -->
+  <div id="tab-architecture" class="section active">
+    <div class="grid-2 section-gap">
+
+      <div class="card cyan">
+        <div class="card-title">System Architecture</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+
+          <div class="arch-layer layer-1" onclick="flash(this)">
+            <span class="layer-icon">🌐</span>
+            <div class="layer-info">
+              <div class="layer-name">Shared Environment</div>
+              <div class="layer-desc">State \(\mathbf{s}\), Action \(\mathbf{a}\), Reward \(r\) — observed by all \(N\) agents simultaneously.</div>
+            </div>
+            <span class="layer-tag">ENV</span>
+          </div>
+
+          <div class="layer-arrow">↓ State Observations</div>
+
+          <div class="arch-layer layer-2" onclick="flash(this)">
+            <span class="layer-icon">🤝</span>
+            <div class="layer-info">
+              <div class="layer-name">Multi-Agent Coordination Layer</div>
+              <div class="layer-desc">Agents share state \(\mathbf{s}_i\), communicate, resolve conflicts, and maximise global reward \(R_{\text{global}}\).</div>
+            </div>
+            <span class="layer-tag">MARL</span>
+          </div>
+
+          <div class="layer-arrow">↓ Task Distribution</div>
+
+          <div class="arch-layer layer-3" onclick="flash(this)">
+            <span class="layer-icon">🧠</span>
+            <div class="layer-info">
+              <div class="layer-name">Hierarchical RL Module</div>
+              <div class="layer-desc">High-level policy \(\pi_H\) selects macro-actions \(g\). Low-level policy \(\pi_L(s,g)\) executes micro-actions \(a\).</div>
+            </div>
+            <span class="layer-tag">HRL</span>
+          </div>
+
+          <div class="layer-arrow">↓ Decisions + Policy Traces</div>
+
+          <div class="arch-layer layer-4" onclick="flash(this)">
+            <span class="layer-icon">💡</span>
+            <div class="layer-info">
+              <div class="layer-name">Explainability Engine</div>
+              <div class="layer-desc">Transforms black-box \(Q(s,a)\) into human-readable justifications, policy visualisations and decision traces.</div>
+            </div>
+            <span class="layer-tag">XAI</span>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--muted);font-style:italic;">↑ Click any layer to highlight it</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+
+        <div class="card purple">
+          <div class="card-title">HRL Policy Hierarchy</div>
+          <div style="display:flex;gap:14px;margin-bottom:16px;">
+            <div style="flex:1;background:var(--accent2l);border:1px solid rgba(107,63,160,0.2);border-radius:6px;padding:16px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:8px;">🎯</div>
+              <div style="font-family:'Fraunces',serif;font-weight:700;font-size:13px;color:var(--accent2);margin-bottom:6px;">High-Level Policy \(\pi_H\)</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.7;">Selects macro-actions \(g\)<br>Sub-goals &amp; strategies<br>Long-term planning</div>
+            </div>
+            <div style="display:flex;align-items:center;font-size:20px;color:var(--border2);">→</div>
+            <div style="flex:1;background:var(--accent1l);border:1px solid rgba(26,107,138,0.2);border-radius:6px;padding:16px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:8px;">⚙️</div>
+              <div style="font-family:'Fraunces',serif;font-weight:700;font-size:13px;color:var(--accent1);margin-bottom:6px;">Low-Level Policy \(\pi_L\)</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.7;">Executes micro-actions \(a\)<br>Environment interaction<br>Real-time adjustments</div>
+            </div>
+          </div>
+          <div class="eq-box" style="border-left-color:var(--accent2);">
+            <div class="eq-label" style="color:var(--accent2);">Policy &amp; Reward</div>
+            <div class="eq-body">\(\pi(a \mid s) = \arg\max_a\, Q(s, a), \quad R = \sum_{t=0}^{T} r_t\)</div>
+          </div>
+        </div>
+
+        <div class="card amber">
+          <div class="card-title">Explainability Engine</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <span style="font-size:16px;">📝</span>
+              <div>
+                <div style="font-family:'Crimson Pro',serif;font-size:14px;font-weight:700;color:var(--accent3);margin-bottom:2px;">Action Justification</div>
+                <div style="font-size:12px;color:var(--muted);line-height:1.7;">Why did agent \(i\) choose action \(a\) at step \(t\)? The engine surfaces the dominant state features driving \(\arg\max Q(s,a)\).</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <span style="font-size:16px;">📊</span>
+              <div>
+                <div style="font-family:'Crimson Pro',serif;font-size:14px;font-weight:700;color:var(--accent3);margin-bottom:2px;">Policy Visualisation</div>
+                <div style="font-size:12px;color:var(--muted);line-height:1.7;">Graphical representations of learned \(\pi_H\) and \(\pi_L\) across training epochs for human inspection.</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <span style="font-size:16px;">🔍</span>
+              <div>
+                <div style="font-family:'Crimson Pro',serif;font-size:14px;font-weight:700;color:var(--accent3);margin-bottom:2px;">Decision Traceability</div>
+                <div style="font-size:12px;color:var(--muted);line-height:1.7;">Chronological log: \((s_t, a_t, r_t, s_{t+1})\) for every agent. Essential for debugging safety-critical deployments.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card green">
+      <div class="card-title">Key Contributions</div>
+      <div class="grid-3">
+        <div style="text-align:center;padding:14px;">
+          <div style="font-size:28px;margin-bottom:10px;">🤖</div>
+          <div style="font-family:'Fraunces',serif;font-weight:700;font-size:14px;color:var(--accent4);margin-bottom:6px;">Multi-Agent Coordination</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7;">Scalable cooperative framework for \(N\) autonomous agents with reward sharing and conflict resolution</div>
+        </div>
+        <div style="text-align:center;padding:14px;border-left:1px solid var(--border);border-right:1px solid var(--border);">
+          <div style="font-size:28px;margin-bottom:10px;">🏗️</div>
+          <div style="font-family:'Fraunces',serif;font-weight:700;font-size:14px;color:var(--accent4);margin-bottom:6px;">Hierarchical Learning</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7;">Two-tier policy decomposition \((\pi_H, \pi_L)\) for faster convergence and scalable task decomposition</div>
+        </div>
+        <div style="text-align:center;padding:14px;">
+          <div style="font-size:28px;margin-bottom:10px;">🔬</div>
+          <div style="font-family:'Fraunces',serif;font-weight:700;font-size:14px;color:var(--accent4);margin-bottom:6px;">Explainable AI</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7;">Black-box RL made interpretable for certification in autonomous driving, medical, and industrial systems</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TAB 2 · SIMULATION
+  ══════════════════════════════════════ -->
+  <div id="tab-simulation" class="section">
+    <div class="grid-2 section-gap">
+
+      <div class="card cyan">
+        <div class="card-title">Live Agent Coordination</div>
+        <div class="sim-controls">
+          <button class="sim-btn" id="sim-toggle" onclick="toggleSim()">▶ Start</button>
+          <button class="sim-btn" onclick="resetSim()">↺ Reset</button>
+          <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;">4 agents · 6 tasks</span>
+        </div>
+        <div id="sim-canvas-wrap">
+          <canvas id="sim-canvas" height="300"></canvas>
+        </div>
+        <div class="sub-title">XAI Decision Feed — \(\mathcal{E}_i(s, a, r)\)</div>
+        <div class="explanation-feed" id="exp-feed">
+          <div class="log-entry" style="color:var(--muted);">// Simulation paused. Press ▶ Start to run agents.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="card purple">
+          <div class="card-title">Agent Status</div>
+          <div id="agent-status"></div>
+        </div>
+        <div class="card amber">
+          <div class="card-title">Real-time Metrics</div>
+          <div class="metric-row">
+            <div class="metric-label">Tasks Completed</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-cyan" id="bar-tasks"></div></div>
+            <div class="metric-value" style="color:var(--accent1);" id="val-tasks">0%</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Coordination Success</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-purple" id="bar-coord"></div></div>
+            <div class="metric-value" style="color:var(--accent2);" id="val-coord">0%</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Explainability Score</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-green" id="bar-xai"></div></div>
+            <div class="metric-value" style="color:var(--accent4);" id="val-xai">0%</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Overall Efficiency</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-amber" id="bar-eff"></div></div>
+            <div class="metric-value" style="color:var(--accent3);" id="val-eff">0%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TAB 3 · ALGORITHM
+  ══════════════════════════════════════ -->
+  <div id="tab-algorithm" class="section">
+    <div class="grid-2">
+
+      <div class="card cyan">
+        <div class="card-title">Algorithm Walkthrough</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:18px;font-style:italic;">Click each step to expand the explanation.</p>
+
+        <div class="algo-step active" onclick="toggleStep(this)">
+          <span class="step-num">01</span>
+          <div class="step-content">
+            <div class="step-title">Initialisation</div>
+            <div class="step-detail">Initialise environment \(\mathcal{E}\), state space \(\mathcal{S}\), action space \(\mathcal{A}\), \(N\) agents each with \(\pi_H\) and \(\pi_L\), action-value function \(Q(s,a)\), and explainability module \(\mathcal{X}\).</div>
+          </div>
+          <span class="step-badge badge-env">ENV</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">02</span>
+          <div class="step-content">
+            <div class="step-title">Episode Loop Begins</div>
+            <div class="step-detail">Reset \(\mathcal{E}\) and observe initial state \(s_0\). Loop continues until termination condition: task completion or maximum steps \(T\).</div>
+          </div>
+          <span class="step-badge badge-env">ENV</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">03</span>
+          <div class="step-content">
+            <div class="step-title">High-Level Policy Selects Macro-Action</div>
+            <div class="step-detail">For each agent \(i \in [N]\), the high-level policy selects a sub-goal: \(g \leftarrow \pi_H(s)\). This abstracts long-horizon planning into manageable coordination strategies.</div>
+          </div>
+          <span class="step-badge badge-hl">High-Level</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">04</span>
+          <div class="step-content">
+            <div class="step-title">Low-Level Policy Executes Sub-Action</div>
+            <div class="step-detail">Given sub-goal \(g\), the low-level policy executes: \(a \leftarrow \pi_L(s, g)\). This concrete action (move, resource pick-up, task step) directly interacts with \(\mathcal{E}\).</div>
+          </div>
+          <span class="step-badge badge-ll">Low-Level</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">05</span>
+          <div class="step-content">
+            <div class="step-title">Bellman Update &amp; Policy Optimisation</div>
+            <div class="step-detail">Observe \((s', r)\) from \(\mathcal{E}\). Update \(Q\)-value:
+            \[Q(s,a) \;\leftarrow\; Q(s,a) + \alpha\!\left[r + \gamma \max_{a'} Q(s',a') - Q(s,a)\right]\]
+            Then update \(\pi_L\) and \(\pi_H\) via gradient descent.</div>
+          </div>
+          <span class="step-badge badge-env">Update</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">06</span>
+          <div class="step-content">
+            <div class="step-title">XAI Explanation Generated</div>
+            <div class="step-detail">Module \(\mathcal{X}\) produces explanation \(\mathcal{E}_i\) for agent \(i\)'s decision: identifies dominant features in \(s\), justifies \(\arg\max Q(s,a)\), and appends to the decision trace \(\{(s_t, a_t, r_t)\}_{t=0}^T\).</div>
+          </div>
+          <span class="step-badge badge-xai">XAI</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">07</span>
+          <div class="step-content">
+            <div class="step-title">State Transition → Next Step</div>
+            <div class="step-detail">Set \(s \leftarrow s'\). Inner loop repeats for all agents. After 50 epochs, training accuracy reaches \(96.4\%\) and validation accuracy \(95.7\%\).</div>
+          </div>
+          <span class="step-badge badge-hl">Iterate</span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+
+        <div class="card purple">
+          <div class="card-title">Core Equations</div>
+
+          <div class="eq-box" style="border-left-color:var(--accent2);">
+            <div class="eq-label" style="color:var(--accent2);">Eq. 1 — Cumulative Reward</div>
+            <div class="eq-body">\[\displaystyle R = \sum_{t=0}^{T} r_t\]</div>
+            <div class="eq-desc">Sum of all rewards \(r_t\) received by an agent over episode length \(T\)</div>
+          </div>
+
+          <div class="eq-box" style="border-left-color:var(--accent1);">
+            <div class="eq-label" style="color:var(--accent1);">Eq. 2 — Optimal Policy</div>
+            <div class="eq-body">\[\pi^*(a \mid s) = \arg\max_{a \in \mathcal{A}}\, Q(s, a)\]</div>
+            <div class="eq-desc">Select action \(a\) maximising expected future reward \(Q(s,a)\) in state \(s\)</div>
+          </div>
+
+          <div class="eq-box" style="border-left-color:var(--accent3);">
+            <div class="eq-label" style="color:var(--accent3);">Eq. 3 — Bellman Update (Q-Learning)</div>
+            <div class="eq-body">\[Q(s,a) \leftarrow Q(s,a) + \alpha \!\left[ r + \gamma \max_{a'} Q(s',a') - Q(s,a) \right]\]</div>
+            <div class="eq-desc">\(\alpha\) = learning rate, \(\gamma\) = discount factor, \((s',a')\) = next state-action pair</div>
+          </div>
+
+          <div class="eq-box" style="border-left-color:var(--accent4);">
+            <div class="eq-label" style="color:var(--accent4);">Eq. 4 — Hierarchical Composition</div>
+            <div class="eq-body">\[a = \pi_L\!\left(s,\; \pi_H(s)\right)\]</div>
+            <div class="eq-desc">Low-level action \(a\) is conditioned on the sub-goal \(g = \pi_H(s)\) from the high-level policy</div>
+          </div>
+        </div>
+
+        <div class="card green">
+          <div class="card-title">Pseudocode</div>
+          <div class="pseudocode"><span class="kw">INPUT:</span>  <span class="vr">E</span> (env), <span class="vr">S</span> (states), <span class="vr">A</span> (actions)
+<span class="kw">OUTPUT:</span> Optimised \(\pi_H, \pi_L\) + explanations
+
+<span class="fn">Init</span> <span class="vr">E</span>, <span class="vr">N</span> agents, <span class="vr">πH</span>, <span class="vr">πL</span>, <span class="vr">Q(s,a)</span>, <span class="vr">X</span>
+<span class="kw">FOR</span> each episode:
+  <span class="fn">Reset</span> <span class="vr">E</span>; observe initial state <span class="vr">s</span>
+  <span class="kw">WHILE</span> not terminated:
+    <span class="kw">FOR</span> each agent <span class="vr">i ∈ N</span>:
+      <span class="vr">g</span>  ← <span class="vr">πH</span>(<span class="vr">s</span>)             <span class="cm">// macro-action</span>
+      <span class="vr">a</span>  ← <span class="vr">πL</span>(<span class="vr">s</span>, <span class="vr">g</span>)          <span class="cm">// sub-action</span>
+      Apply <span class="vr">a</span> to <span class="vr">E</span>
+      <span class="vr">s'</span>, <span class="vr">r</span> ← observe
+      Update <span class="vr">Q(s,a)</span> via Bellman
+      Update <span class="vr">πL</span>, <span class="vr">πH</span>
+      <span class="vr">Ei</span> ← <span class="vr">X</span>.<span class="fn">explain</span>(<span class="vr">s</span>,<span class="vr">a</span>,<span class="vr">r</span>)   <span class="cm">// XAI</span>
+      Store trace + <span class="vr">Ei</span>
+      <span class="vr">s</span> ← <span class="vr">s'</span>
+<span class="kw">RETURN</span> <span class="vr">πH</span>, <span class="vr">πL</span>, explanations</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TAB 4 · RESULTS
+  ══════════════════════════════════════ -->
+  <div id="tab-results" class="section">
+    <div class="grid-2 section-gap">
+
+      <div class="card cyan">
+        <div class="card-title">Model Performance — Accuracy \((\%)\)</div>
+        <div class="metric-row">
+          <div class="metric-label">Proposed MARL-HRL + XAI</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="96.4"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">96.4%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Hierarchical RL (HRL)</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="94.1" style="opacity:.65;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">94.1%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Multi-Agent RL (MARL)</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="91.7" style="opacity:.45;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">91.7%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Traditional RL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="88.9" style="opacity:.3;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">88.9%</div>
+        </div>
+        <div class="divider"></div>
+        <div class="metric-row">
+          <div class="metric-label">Precision \(\left(\frac{TP}{TP+FP}\right)\)</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-purple result-bar" data-val="95.9"></div></div>
+          <div class="metric-value" style="color:var(--accent2);">95.9%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Recall \(\left(\frac{TP}{TP+FN}\right)\)</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-green result-bar" data-val="97.1"></div></div>
+          <div class="metric-value" style="color:var(--accent4);">97.1%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">F\(_1\)-Score \(\left(\frac{2 \cdot P \cdot R}{P + R}\right)\)</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-amber result-bar" data-val="96.5"></div></div>
+          <div class="metric-value" style="color:var(--accent3);">96.5%</div>
+        </div>
+      </div>
+
+      <div class="card purple">
+        <div class="card-title">Coordination Efficiency</div>
+        <div class="metric-row">
+          <div class="metric-label">Task Completion — Proposed</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="96.2"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">96.2%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Task Completion — HRL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="92.6" style="opacity:.65;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">92.6%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Task Completion — MARL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="88.9" style="opacity:.45;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">88.9%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Task Completion — Trad. RL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="82.4" style="opacity:.3;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">82.4%</div>
+        </div>
+        <div class="divider"></div>
+        <div class="sub-title">Average Decision Time \((\mathrm{ms})\) — lower is better</div>
+        <div class="metric-row">
+          <div class="metric-label">Traditional RL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-amber result-bar" data-val="97" style="opacity:.3;"></div></div>
+          <div class="metric-value" style="color:var(--accent3);">145 ms</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">MARL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-amber result-bar" data-val="88" style="opacity:.5;"></div></div>
+          <div class="metric-value" style="color:var(--accent3);">132 ms</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">HRL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-amber result-bar" data-val="79" style="opacity:.7;"></div></div>
+          <div class="metric-value" style="color:var(--accent3);">118 ms</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Proposed MARL-HRL + XAI</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-green result-bar" data-val="69"></div></div>
+          <div class="metric-value" style="color:var(--accent4);">103 ms</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card amber">
+      <div class="card-title">Training Curves — Accuracy \(\&\) Loss over 50 Epochs</div>
+      <canvas id="chart-canvas" height="220"></canvas>
+      <div class="chart-legend">
+        <span><span class="legend-dot" style="background:var(--accent1);"></span>Train Accuracy</span>
+        <span><span class="legend-dot" style="background:var(--accent2);"></span>Validation Accuracy</span>
+        <span><span class="legend-dot" style="background:var(--accent3);"></span>Train Loss (scaled)</span>
+        <span><span class="legend-dot" style="background:var(--accent4);"></span>Validation Loss (scaled)</span>
+      </div>
+      <div class="eq-box" style="margin-top:16px;border-left-color:var(--accent3);">
+        <div class="eq-label" style="color:var(--accent3);">Final Epoch (Epoch 50)</div>
+        <div class="eq-body" style="font-size:13px;">\(\text{Acc}_{\text{train}} = 96.4\%,\quad \text{Acc}_{\text{val}} = 95.7\%,\quad \mathcal{L}_{\text{train}} = 0.14,\quad \mathcal{L}_{\text{val}} = 0.17\)</div>
+        <div class="eq-desc">Small gap between training and validation confirms no overfitting — the model generalises to unseen coordination scenarios.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TAB 5 · COMPARISON
+  ══════════════════════════════════════ -->
+  <div id="tab-compare" class="section">
+    <div class="card cyan section-gap">
+      <div class="card-title">Baseline Comparison</div>
+      <table class="comp-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Accuracy</th>
+            <th>Coordination Eff.</th>
+            <th>Decision Transparency</th>
+            <th>Learning Stability</th>
+            <th>Explainability</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--muted);">Traditional RL</td>
+            <td>88.9%</td>
+            <td>84.5%</td>
+            <td><span class="chip chip-low">Low</span></td>
+            <td><span class="chip chip-med">Medium</span></td>
+            <td><span class="chip chip-low">None</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);">Multi-Agent RL (MARL)</td>
+            <td>91.7%</td>
+            <td>89.7%</td>
+            <td><span class="chip chip-low">Low</span></td>
+            <td><span class="chip chip-med">Medium</span></td>
+            <td><span class="chip chip-low">None</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);">Hierarchical RL (HRL)</td>
+            <td>94.1%</td>
+            <td>92.8%</td>
+            <td><span class="chip chip-med">Medium</span></td>
+            <td><span class="chip chip-high">High</span></td>
+            <td><span class="chip chip-med">Partial</span></td>
+          </tr>
+          <tr class="highlight">
+            <td style="color:var(--accent1);font-weight:700;font-family:'Crimson Pro',serif;font-size:14px;">Proposed MARL-HRL + XAI ✦</td>
+            <td style="color:var(--accent4);font-weight:700;font-family:'DM Mono',monospace;">96.4%</td>
+            <td style="color:var(--accent4);font-weight:700;font-family:'DM Mono',monospace;">96.4%</td>
+            <td><span class="chip chip-high">High</span></td>
+            <td><span class="chip chip-high">High</span></td>
+            <td><span class="chip chip-high">Full</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid-2">
+      <div class="card purple">
+        <div class="card-title">Why XAI Matters in Autonomous Systems</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:18px;">🚗</span>
+            <div>
+              <div style="font-family:'Crimson Pro',serif;font-size:14px;font-weight:700;color:var(--accent2);margin-bottom:3px;">Autonomous Driving</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.7;">Regulators require explanation for every decision taken by policy \(\pi(a \mid s)\). Black-box RL cannot be certified without interpretability.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:18px;">🏥</span>
+            <div>
+              <div style="font-family:'Crimson Pro',serif;font-size:14px;font-weight:700;color:var(--accent2);margin-bottom:3px;">Medical Systems</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.7;">Clinicians must trace the causal path from state \(s\) to action \(a\) to \(r\) before trusting AI decisions in patient care.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:18px;">🏭</span>
+            <div>
+              <div style="font-family:'Crimson Pro',serif;font-size:14px;font-weight:700;color:var(--accent2);margin-bottom:3px;">Manufacturing Automation</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.7;">Safety protocols require auditable \(\{(s_t, a_t)\}\) logs to trace coordination failures and prevent accidents.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:18px;">🚁</span>
+            <div>
+              <div style="font-family:'Crimson Pro',serif;font-size:14px;font-weight:700;color:var(--accent2);margin-bottom:3px;">Robotic Swarms</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.7;">Human operators need to understand swarm coordination under \(\pi_H\) and intervene when emergent behaviours diverge from intent.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card green">
+        <div class="card-title">Research Gap Addressed</div>
+
+        <div style="background:rgba(220,38,38,0.05);border:1px solid rgba(220,38,38,0.18);border-radius:6px;padding:16px;margin-bottom:12px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:#b91c1c;margin-bottom:8px;">❌ Existing Gap</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.75;">Most MARL and HRL models optimise \(\max_\pi \mathbb{E}[R]\) without any mechanism for interpretability. Performance-only frameworks cannot be deployed in safety-critical domains where accountability is non-negotiable.</div>
+        </div>
+
+        <div style="background:var(--accent4l);border:1px solid rgba(30,123,75,0.2);border-radius:6px;padding:16px;margin-bottom:12px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:var(--accent4);margin-bottom:8px;">✅ This Paper's Solution</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.75;">Integrates module \(\mathcal{X}\) directly into the HRL loop — every \((s, a, r)\) tuple generates a human-readable explanation \(\mathcal{E}_i\), enabling debugging, certification, and user trust.</div>
+        </div>
+
+        <div style="background:var(--accent1l);border:1px solid rgba(26,107,138,0.2);border-radius:6px;padding:16px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:var(--accent1);margin-bottom:8px;">🔮 Future Work</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.75;">Extension to intelligent transport networks, robotic swarms, deeper RL architectures, adaptive inter-agent communication protocols \(\mathcal{C}(i,j)\), and richer attribution-based XAI methods.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>EXPLAINABLE MULTI-AGENT AI FRAMEWORK &nbsp;·&nbsp; Tammireddy &amp; Singh &nbsp;·&nbsp; MLRITM Hyderabad &nbsp;·&nbsp; Interactive Visualization</footer>
+</div>
+
+<script>
+// ── TAB SWITCHING ──
+function showTab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'results') setTimeout(animateBars, 120);
+  if (id === 'results') setTimeout(drawChart, 200);
+  if (id === 'simulation') { resetSim(); }
+}
+
+function flash(el) {
+  el.style.outline = '2px solid currentColor';
+  setTimeout(() => el.style.outline = '', 500);
+}
+
+// ── ALGO STEPS ──
+function toggleStep(el) {
+  const was = el.classList.contains('active');
+  document.querySelectorAll('.algo-step').forEach(s => s.classList.remove('active'));
+  if (!was) el.classList.add('active');
+}
+
+// ── RESULT BARS ──
+function animateBars() {
+  document.querySelectorAll('.result-bar').forEach(bar => {
+    bar.style.width = (parseFloat(bar.dataset.val) || 0) + '%';
+  });
+}
+
+// ── TRAINING CHART ──
+function drawChart() {
+  const canvas = document.getElementById('chart-canvas');
+  if (!canvas) return;
+  const W = canvas.offsetWidth;
+  canvas.width = W; canvas.height = 220;
+  const ctx = canvas.getContext('2d');
+  const PAD = { top:18, right:16, bottom:38, left:42 };
+  const CW = W - PAD.left - PAD.right;
+  const CH = 220 - PAD.top - PAD.bottom;
+
+  // Background
+  ctx.fillStyle = '#fdf8f0';
+  ctx.fillRect(0,0,W,220);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(214,207,195,0.7)';
+  ctx.lineWidth = 1;
+  for(let g=0;g<=5;g++){
+    const y = PAD.top+(g/5)*CH;
+    ctx.beginPath();ctx.moveTo(PAD.left,y);ctx.lineTo(PAD.left+CW,y);ctx.stroke();
+  }
+  for(let g=0;g<=10;g++){
+    const x = PAD.left+(g/10)*CW;
+    ctx.beginPath();ctx.moveTo(x,PAD.top);ctx.lineTo(x,PAD.top+CH);ctx.stroke();
+  }
+
+  function plotLine(data, color, dashed, minV, maxV) {
+    ctx.beginPath();
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.setLineDash(dashed ? [5,4] : []);
+    data.forEach((v,i)=>{
+      const x = PAD.left+(i/10)*CW;
+      const y = PAD.top+CH - ((v-minV)/(maxV-minV))*CH;
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.stroke(); ctx.setLineDash([]);
+    data.forEach((v,i)=>{
+      const x = PAD.left+(i/10)*CW;
+      const y = PAD.top+CH - ((v-minV)/(maxV-minV))*CH;
+      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2);
+      ctx.fillStyle=color; ctx.fill();
+    });
+  }
+
+  const trainAcc  = [72,78,83,87,90,92,93.5,94.5,95.5,96.1,96.4];
+  const valAcc    = [70,76,81,86,89,91,92.8,93.9,94.8,95.4,95.7];
+  const trainLoss = [1.2,0.95,0.75,0.58,0.44,0.34,0.27,0.22,0.18,0.16,0.14];
+  const valLoss   = [1.3,1.02,0.82,0.64,0.49,0.38,0.30,0.25,0.21,0.19,0.17];
+
+  plotLine(trainAcc,            '#1a6b8a', false, 65, 100);
+  plotLine(valAcc,              '#6b3fa0', false, 65, 100);
+  plotLine(trainLoss.map(v=>65+(v/1.4)*35), '#b45309', true,  65, 100);
+  plotLine(valLoss.map(v=>65+(v/1.4)*35),   '#1e7b4b', true,  65, 100);
+
+  // Axis labels
+  ctx.fillStyle = '#78716c';
+  ctx.font = '9px DM Mono, monospace';
+  ctx.textAlign = 'right';
+  ['100%','93%','86%','79%','72%','65%'].forEach((l,i)=>{
+    ctx.fillText(l, PAD.left-5, PAD.top+(i/5)*CH+3);
+  });
+  ctx.textAlign = 'center';
+  [0,5,10,15,20,25,30,35,40,45,50].forEach((e,i)=>{
+    ctx.fillText(''+e, PAD.left+(i/10)*CW, 220-PAD.bottom+13);
+  });
+  ctx.fillStyle='#44403c'; ctx.font='9px DM Mono,monospace';
+  ctx.fillText('Epoch', PAD.left+CW/2, 220-2);
+}
+
+// ── SIMULATION ──
+let simInterval=null, simRunning=false, simTick=0;
+let agents, tasks, tasksDone;
+
+const AGENTS_INIT = [
+  {id:'A1',x:70, y:70, color:'#1a6b8a',goal:'navigate',score:0,status:'idle'},
+  {id:'A2',x:280,y:70, color:'#6b3fa0',goal:'collect', score:0,status:'idle'},
+  {id:'A3',x:70, y:215,color:'#b45309',goal:'defend',  score:0,status:'idle'},
+  {id:'A4',x:280,y:215,color:'#1e7b4b',goal:'explore', score:0,status:'idle'},
+];
+const TASKS_INIT = [
+  {x:185,y:55,done:false,label:'T1'},{x:315,y:138,done:false,label:'T2'},
+  {x:55, y:158,done:false,label:'T3'},{x:215,y:235,done:false,label:'T4'},
+  {x:138,y:128,done:false,label:'T5'},{x:295,y:55,done:false,label:'T6'},
+];
+
+const EXPL = [
+  (a,g) => `<span class="agent">[${a}]</span> π<sub>H</sub> selected macro-action <span class="action">${g}</span> via proximity heuristic`,
+  (a,g) => `<span class="agent">[${a}]</span> π<sub>L</sub>(s,g) executing sub-action → <span class="action">${g}</span> · reward Δ = +0.${Math.floor(Math.random()*9)+1}`,
+  (a,g) => `<span class="agent">[${a}]</span> XAI: dominant feature = <span class="reason">dist_to_task</span> · Q(s,a) = ${(Math.random()*.4+.6).toFixed(3)}`,
+  (a,g) => `<span class="agent">[${a}]</span> Coordination: avoided collision via reward sharing with neighbour`,
+  (a,g) => `<span class="agent">[${a}]</span> Trace (s,a,r,s') stored · transparency score <span class="reason">↑ +2.1%</span>`,
+];
+
+function resetSim() {
+  clearInterval(simInterval); simInterval=null; simRunning=false;
+  const btn = document.getElementById('sim-toggle');
+  if(btn){btn.textContent='▶ Start'; btn.classList.remove('running');}
+  simTick=0;
+  agents    = AGENTS_INIT.map(a=>({...a}));
+  tasks     = TASKS_INIT.map(t=>({...t}));
+  tasksDone = 0;
+  setMetrics(0,0,0,0);
+  const feed = document.getElementById('exp-feed');
+  if(feed) feed.innerHTML='<div class="log-entry" style="color:var(--muted);">// Simulation reset. Press ▶ Start to run agents.</div>';
+  renderAgentStatus();
+  drawSim();
+}
+
+function toggleSim() {
+  if (simRunning) {
+    clearInterval(simInterval); simRunning=false;
+    document.getElementById('sim-toggle').textContent='▶ Start';
+    document.getElementById('sim-toggle').classList.remove('running');
+  } else {
+    simRunning=true;
+    document.getElementById('sim-toggle').textContent='⏸ Pause';
+    document.getElementById('sim-toggle').classList.add('running');
+    simInterval=setInterval(simStep,180);
+  }
+}
+
+function simStep() {
+  simTick++;
+  agents.forEach((ag,i)=>{
+    const inc = tasks.filter(t=>!t.done);
+    if(!inc.length) return;
+    const target = inc[i % inc.length];
+    if(!target) return;
+    ag.status = 'active';
+    const dx=target.x-ag.x, dy=target.y-ag.y, dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<14){
+      target.done=true; tasksDone++; ag.status='completed'; ag.score++;
+      addLog(EXPL[2](ag.id,ag.goal));
+    } else {
+      ag.x += (dx/dist)*4+(Math.random()-.5)*1.5;
+      ag.y += (dy/dist)*4+(Math.random()-.5)*1.5;
+      if(Math.random()<0.15) addLog(EXPL[Math.floor(Math.random()*EXPL.length)](ag.id,ag.goal));
+    }
+  });
+  const pct=(tasksDone/TASKS_INIT.length)*100;
+  setMetrics(
+    Math.min(100,pct+Math.random()*2),
+    Math.min(100,pct*.99+Math.random()*3),
+    Math.min(100,50+simTick*1.5+Math.random()*4),
+    Math.min(100,pct*.98+Math.random()*2)
+  );
+  renderAgentStatus(); drawSim();
+  if(tasks.every(t=>t.done)){
+    clearInterval(simInterval); simRunning=false;
+    document.getElementById('sim-toggle').textContent='✓ Done';
+    addLog('<span style="color:var(--accent4);">// ✓ All tasks completed! Final coordination success.</span>');
+  }
+}
+
+function addLog(html) {
+  const feed=document.getElementById('exp-feed');
+  if(!feed) return;
+  const e=document.createElement('div');
+  e.className='log-entry';
+  e.innerHTML=`<span style="color:var(--border2);">[${String(simTick).padStart(3,'0')}]</span> ${html}`;
+  feed.appendChild(e);
+  feed.scrollTop=feed.scrollHeight;
+  while(feed.children.length>30) feed.removeChild(feed.firstChild);
+}
+
+function setMetrics(t,c,x,e){
+  ['tasks','coord','xai','eff'].forEach((k,i)=>{
+    const v=[t,c,x,e][i];
+    const bar=document.getElementById('bar-'+k), val=document.getElementById('val-'+k);
+    if(bar) bar.style.width=v+'%';
+    if(val) val.textContent=Math.round(v)+'%';
+  });
+}
+
+function renderAgentStatus(){
+  const el=document.getElementById('agent-status');
+  if(!el) return;
+  el.innerHTML = (agents||[]).map(ag=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:5px;border:1px solid var(--border);margin-bottom:8px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:${ag.color};"></div>
+      <div style="flex:1;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:${ag.color};">${ag.id}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:'Crimson Pro',serif;">Goal: <em>${ag.goal}</em> &nbsp;|&nbsp; Tasks: ${ag.score}</div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:${ag.status==='active'?'var(--accent3)':ag.status==='completed'?'var(--accent4)':'var(--muted)'};">${ag.status}</div>
+    </div>
+  `).join('');
+}
+
+function drawSim(){
+  const canvas=document.getElementById('sim-canvas');
+  if(!canvas) return;
+  const wrap=document.getElementById('sim-canvas-wrap');
+  const W=wrap.clientWidth-28;
+  canvas.width=W; canvas.height=300;
+  const ctx=canvas.getContext('2d');
+
+  // Background — light paper
+  ctx.fillStyle='#f7f4ef'; ctx.fillRect(0,0,W,300);
+  // Grid
+  ctx.strokeStyle='rgba(214,207,195,0.5)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,300);ctx.stroke();}
+  for(let y=0;y<300;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  const sX=W/380, sY=300/280;
+  // Tasks
+  (tasks||[]).forEach(t=>{
+    const tx=t.x*sX, ty=t.y*sY;
+    ctx.beginPath(); ctx.arc(tx,ty,11,0,Math.PI*2);
+    ctx.fillStyle = t.done ? 'rgba(30,123,75,0.12)' : 'rgba(180,83,9,0.1)'; ctx.fill();
+    ctx.strokeStyle = t.done ? '#1e7b4b' : '#b45309'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle = t.done ? '#1e7b4b' : '#b45309';
+    ctx.font='bold 9px DM Mono,monospace'; ctx.textAlign='center';
+    ctx.fillText(t.done?'✓':t.label, tx, ty+3);
+  });
+  // Agents
+  (agents||[]).forEach(ag=>{
+    const ax=ag.x*sX, ay=ag.y*sY;
+    const grd=ctx.createRadialGradient(ax,ay,0,ax,ay,20);
+    grd.addColorStop(0,ag.color+'28'); grd.addColorStop(1,'transparent');
+    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(ax,ay,20,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ax,ay,9,0,Math.PI*2);
+    ctx.fillStyle=ag.color+'18'; ctx.fill();
+    ctx.strokeStyle=ag.color; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle=ag.color; ctx.font='bold 9px DM Mono,monospace'; ctx.textAlign='center';
+    ctx.fillText(ag.id,ax,ay+3);
+  });
+  ctx.fillStyle='rgba(120,113,108,0.7)'; ctx.font='9px DM Mono,monospace'; ctx.textAlign='left';
+  ctx.fillText('● Agents   ○ Tasks   ✓ Done',8,293);
+}
+
+// ── INIT ──
+window.addEventListener('load',()=>{
+  resetSim();
+  animateBars();
+  setTimeout(drawChart,200);
+});
+window.addEventListener('resize',()=>{ drawChart(); drawSim(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Explainable Multi-Agent HRL Framework</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #080c14;
+    --surface: #0d1521;
+    --surface2: #111d2e;
+    --border: #1e3a5f;
+    --accent1: #00d4ff;
+    --accent2: #7c3aed;
+    --accent3: #f59e0b;
+    --accent4: #10b981;
+    --text: #e2eeff;
+    --muted: #637a99;
+    --glow1: rgba(0,212,255,0.15);
+    --glow2: rgba(124,58,237,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Space Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 48px 0 32px;
+    text-align: center;
+    position: relative;
+  }
+  header .badge {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent1);
+    border: 1px solid var(--accent1);
+    padding: 4px 14px;
+    margin-bottom: 20px;
+    border-radius: 2px;
+  }
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(22px, 4vw, 42px);
+    font-weight: 800;
+    line-height: 1.15;
+    background: linear-gradient(135deg, var(--accent1) 0%, #a78bfa 50%, var(--accent3) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 14px;
+  }
+  header p {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 1px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* ── NAV TABS ── */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin: 32px 0 40px;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all .2s;
+    border-radius: 2px;
+  }
+  .tab-btn:hover { border-color: var(--accent1); color: var(--accent1); }
+  .tab-btn.active {
+    background: var(--accent1);
+    border-color: var(--accent1);
+    color: var(--bg);
+    font-weight: 700;
+  }
+
+  /* ── SECTIONS ── */
+  .section { display: none; }
+  .section.active { display: block; animation: fadeIn .35s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .card.cyan::before { background: linear-gradient(90deg, var(--accent1), transparent); }
+  .card.purple::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+  .card.amber::before { background: linear-gradient(90deg, var(--accent3), transparent); }
+  .card.green::before { background: linear-gradient(90deg, var(--accent4), transparent); }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .cyan .card-title { color: var(--accent1); }
+  .purple .card-title { color: #a78bfa; }
+  .amber .card-title { color: var(--accent3); }
+  .green .card-title { color: var(--accent4); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media(max-width:768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  /* ── ARCHITECTURE DIAGRAM ── */
+  .arch-wrapper { margin-bottom: 24px; }
+  .arch-layer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 20px;
+    border-radius: 4px;
+    margin-bottom: 0;
+    position: relative;
+    cursor: pointer;
+    transition: all .25s;
+  }
+  .arch-layer:hover { transform: translateX(4px); }
+  .arch-layer.layer-1 { background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.3); }
+  .arch-layer.layer-2 { background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.3); margin-left: 40px; }
+  .arch-layer.layer-3 { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); margin-left: 80px; }
+  .arch-layer.layer-4 { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.3); margin-left: 40px; }
+
+  .layer-arrow {
+    text-align: center;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px 0 4px 60px;
+    opacity: .5;
+  }
+  .layer-icon { font-size: 22px; }
+  .layer-info { flex: 1; }
+  .layer-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .layer-desc { font-size: 10px; color: var(--muted); line-height: 1.6; }
+  .layer-tag {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .layer-1 .layer-tag { background: rgba(0,212,255,0.15); color: var(--accent1); }
+  .layer-2 .layer-tag { background: rgba(124,58,237,0.15); color: #a78bfa; }
+  .layer-3 .layer-tag { background: rgba(245,158,11,0.15); color: var(--accent3); }
+  .layer-4 .layer-tag { background: rgba(16,185,129,0.15); color: var(--accent4); }
+
+  /* ── AGENT SIMULATION ── */
+  #sim-canvas-wrap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  #sim-canvas { width: 100%; display: block; border-radius: 2px; }
+
+  .sim-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .sim-btn {
+    background: transparent;
+    border: 1px solid var(--accent1);
+    color: var(--accent1);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all .2s;
+  }
+  .sim-btn:hover { background: var(--accent1); color: var(--bg); }
+  .sim-btn.running { background: var(--accent3); border-color: var(--accent3); color: var(--bg); }
+
+  .explanation-feed {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent1);
+    border-radius: 4px;
+    padding: 16px;
+    height: 120px;
+    overflow-y: auto;
+    font-size: 10px;
+    line-height: 1.8;
+    color: var(--muted);
+  }
+  .explanation-feed .log-entry { margin-bottom: 4px; }
+  .explanation-feed .log-entry .agent { color: var(--accent1); }
+  .explanation-feed .log-entry .action { color: var(--accent3); }
+  .explanation-feed .log-entry .reason { color: var(--accent4); }
+
+  /* ── METRICS BARS ── */
+  .metric-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .metric-label { font-size: 10px; color: var(--muted); min-width: 180px; }
+  .metric-bar-wrap { flex: 1; background: var(--surface2); height: 6px; border-radius: 3px; overflow: hidden; }
+  .metric-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s cubic-bezier(.22,1,.36,1);
+    width: 0;
+  }
+  .metric-value { font-size: 11px; font-weight: 700; min-width: 44px; text-align: right; }
+  .bar-cyan { background: linear-gradient(90deg, var(--accent1), #38bdf8); }
+  .bar-purple { background: linear-gradient(90deg, var(--accent2), #a78bfa); }
+  .bar-amber { background: linear-gradient(90deg, var(--accent3), #fbbf24); }
+  .bar-green { background: linear-gradient(90deg, var(--accent4), #34d399); }
+
+  /* ── CHART ── */
+  #chart-canvas { width: 100%; display: block; }
+  .chart-legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+
+  /* ── ALGO STEPS ── */
+  .algo-step {
+    display: flex;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .2s;
+    border-radius: 2px;
+    padding-left: 12px;
+  }
+  .algo-step:hover { background: var(--surface2); }
+  .algo-step:last-child { border-bottom: none; }
+  .step-num {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--border);
+    min-width: 32px;
+    line-height: 1;
+  }
+  .algo-step.active .step-num { color: var(--accent1); }
+  .step-content { flex: 1; }
+  .step-title { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+  .step-detail { font-size: 10px; color: var(--muted); line-height: 1.7; display: none; }
+  .algo-step.active .step-detail { display: block; }
+  .step-badge {
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    height: fit-content;
+    margin-top: 2px;
+  }
+  .badge-hl { background: rgba(0,212,255,0.15); color: var(--accent1); }
+  .badge-ll { background: rgba(124,58,237,0.15); color: #a78bfa; }
+  .badge-xai { background: rgba(16,185,129,0.15); color: var(--accent4); }
+  .badge-env { background: rgba(245,158,11,0.15); color: var(--accent3); }
+
+  /* ── COMPARISON TABLE ── */
+  .comp-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .comp-table th {
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .comp-table td {
+    padding: 13px 14px;
+    border-bottom: 1px solid rgba(30,58,95,0.5);
+    vertical-align: middle;
+  }
+  .comp-table tr:last-child td { border-bottom: none; }
+  .comp-table tr.highlight td { background: rgba(0,212,255,0.05); }
+  .comp-table tr.highlight td:first-child { border-left: 2px solid var(--accent1); }
+  .chip {
+    display: inline-block;
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: .5px;
+  }
+  .chip-low { background: rgba(239,68,68,0.15); color: #f87171; }
+  .chip-med { background: rgba(245,158,11,0.15); color: var(--accent3); }
+  .chip-high { background: rgba(16,185,129,0.15); color: var(--accent4); }
+
+  /* ── EPOCH CHART ── */
+  .epoch-wrap { position: relative; }
+
+  /* ── MISC ── */
+  .section-gap { margin-bottom: 20px; }
+  .sub-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  footer {
+    text-align: center;
+    padding: 40px 0 32px;
+    font-size: 9px;
+    color: var(--border);
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="badge">Research Paper Visualization</div>
+    <h1>Explainable Multi-Agent AI<br>for Autonomous System Coordination</h1>
+    <p>Hierarchical Reinforcement Learning + Explainable AI — Interactive Demo</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('architecture')">Architecture</button>
+    <button class="tab-btn" onclick="showTab('simulation')">Live Simulation</button>
+    <button class="tab-btn" onclick="showTab('algorithm')">Algorithm</button>
+    <button class="tab-btn" onclick="showTab('results')">Results</button>
+    <button class="tab-btn" onclick="showTab('compare')">Comparison</button>
+  </div>
+
+  <!-- ════════════════ ARCHITECTURE ════════════════ -->
+  <div id="tab-architecture" class="section active">
+    <div class="grid-2 section-gap">
+      <div>
+        <div class="card cyan">
+          <div class="card-title">System Architecture</div>
+          <div class="arch-wrapper">
+
+            <div class="arch-layer layer-1" onclick="toggleLayer(this,'env-detail')">
+              <span class="layer-icon">🌐</span>
+              <div class="layer-info">
+                <div class="layer-name">Shared Environment</div>
+                <div class="layer-desc" id="env-detail">Multiple autonomous agents observe states, take actions, receive rewards. State ← s, Action ← a, Reward ← r</div>
+              </div>
+              <span class="layer-tag">ENV</span>
+            </div>
+
+            <div class="layer-arrow">↓ State Observations</div>
+
+            <div class="arch-layer layer-2" onclick="toggleLayer(this,'mac-detail')">
+              <span class="layer-icon">🤝</span>
+              <div class="layer-info">
+                <div class="layer-name">Multi-Agent Coordination Layer</div>
+                <div class="layer-desc" id="mac-detail">Agents share state data and communicate. Reward sharing and conflict resolution to maximize global performance.</div>
+              </div>
+              <span class="layer-tag">MARL</span>
+            </div>
+
+            <div class="layer-arrow">↓ Task Distribution</div>
+
+            <div class="arch-layer layer-3" onclick="toggleLayer(this,'hrl-detail')">
+              <span class="layer-icon">🧠</span>
+              <div class="layer-info">
+                <div class="layer-name">Hierarchical RL Module</div>
+                <div class="layer-desc" id="hrl-detail">High-Level Policy: macro-actions / sub-goals (strategy, routing, resources). Low-Level Policy: specific micro-actions to achieve sub-goals.</div>
+              </div>
+              <span class="layer-tag">HRL</span>
+            </div>
+
+            <div class="layer-arrow">↓ Decisions + Policy Traces</div>
+
+            <div class="arch-layer layer-4" onclick="toggleLayer(this,'xai-detail')">
+              <span class="layer-icon">💡</span>
+              <div class="layer-info">
+                <div class="layer-name">Explainability Engine</div>
+                <div class="layer-desc" id="xai-detail">Action Justification → Policy Visualization → Decision Traceability. Converts black-box RL into interpretable human-readable reasoning.</div>
+              </div>
+              <span class="layer-tag">XAI</span>
+            </div>
+
+          </div>
+          <p style="font-size:10px;color:var(--muted);margin-top:8px;">↑ Click any layer to expand details</p>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="card purple">
+          <div class="card-title">HRL Policy Hierarchy</div>
+          <div style="display:flex;gap:16px;margin-bottom:16px;">
+            <div style="flex:1;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:4px;padding:16px;text-align:center;">
+              <div style="font-size:24px;margin-bottom:8px;">🎯</div>
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:#a78bfa;margin-bottom:6px;">High-Level Policy  π<sub>H</sub></div>
+              <div style="font-size:10px;color:var(--muted);line-height:1.7;">Selects macro-actions<br>Sub-goals & strategies<br>Long-term planning</div>
+            </div>
+            <div style="display:flex;align-items:center;font-size:20px;color:var(--muted);">→</div>
+            <div style="flex:1;background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.2);border-radius:4px;padding:16px;text-align:center;">
+              <div style="font-size:24px;margin-bottom:8px;">⚙️</div>
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--accent1);margin-bottom:6px;">Low-Level Policy  π<sub>L</sub></div>
+              <div style="font-size:10px;color:var(--muted);line-height:1.7;">Executes micro-actions<br>Environment interaction<br>Real-time adjustments</div>
+            </div>
+          </div>
+          <div style="background:var(--surface2);border-radius:4px;padding:12px;font-size:10px;color:var(--muted);line-height:1.8;">
+            <span style="color:var(--accent3);">Reward:</span> R = Σ γᵗ rₜ &nbsp;|&nbsp;
+            <span style="color:var(--accent3);">Policy:</span> π(a|s) = argmax Q(s,a)
+          </div>
+        </div>
+
+        <div class="card amber">
+          <div class="card-title">Explainability Engine</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <div style="font-size:16px;min-width:24px;">📝</div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--accent3);margin-bottom:2px;">Action Justification</div>
+                <div style="font-size:10px;color:var(--muted);line-height:1.6;">Why did agent choose action <em>a</em> at step <em>t</em>? Human-readable rationale for each decision.</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <div style="font-size:16px;min-width:24px;">📊</div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--accent3);margin-bottom:2px;">Policy Visualization</div>
+                <div style="font-size:10px;color:var(--muted);line-height:1.6;">Graphical views of decision policies and coordination patterns across training epochs.</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <div style="font-size:16px;min-width:24px;">🔍</div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--accent3);margin-bottom:2px;">Decision Traceability</div>
+                <div style="font-size:10px;color:var(--muted);line-height:1.6;">Chronological log of all agent decisions. Debug failures and identify coordination improvements.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card green">
+      <div class="card-title">Key Contributions at a Glance</div>
+      <div class="grid-3">
+        <div style="text-align:center;padding:12px;">
+          <div style="font-size:28px;margin-bottom:8px;">🤖</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--accent4);margin-bottom:6px;">Multi-Agent Coordination</div>
+          <div style="font-size:10px;color:var(--muted);">Scalable cooperative framework for N autonomous agents in shared dynamic environments</div>
+        </div>
+        <div style="text-align:center;padding:12px;border-left:1px solid var(--border);border-right:1px solid var(--border);">
+          <div style="font-size:28px;margin-bottom:8px;">🏗️</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--accent4);margin-bottom:6px;">Hierarchical Learning</div>
+          <div style="font-size:10px;color:var(--muted);">Two-tier policy decomposition — strategy planning + action execution for faster convergence</div>
+        </div>
+        <div style="text-align:center;padding:12px;">
+          <div style="font-size:28px;margin-bottom:8px;">🔬</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--accent4);margin-bottom:6px;">Explainable AI</div>
+          <div style="font-size:10px;color:var(--muted);">Black-box RL made interpretable for safety-critical use: autonomous driving, medical, industrial</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ SIMULATION ════════════════ -->
+  <div id="tab-simulation" class="section">
+    <div class="grid-2 section-gap">
+      <div class="card cyan">
+        <div class="card-title">Live Agent Coordination</div>
+        <div class="sim-controls">
+          <button class="sim-btn" id="sim-toggle" onclick="toggleSim()">▶ Start</button>
+          <button class="sim-btn" onclick="resetSim()">↺ Reset</button>
+          <span style="font-size:10px;color:var(--muted);">Agents: 4 &nbsp;|&nbsp; Tasks: 6</span>
+        </div>
+        <div id="sim-canvas-wrap">
+          <canvas id="sim-canvas" height="300"></canvas>
+        </div>
+        <div class="sub-title">XAI Decision Feed</div>
+        <div class="explanation-feed" id="exp-feed">
+          <div class="log-entry" style="color:var(--muted);">// Simulation paused. Press ▶ Start to run agents.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="card purple">
+          <div class="card-title">Agent Status</div>
+          <div id="agent-status" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+        <div class="card amber">
+          <div class="card-title">Real-time Metrics</div>
+          <div class="metric-row">
+            <div class="metric-label">Tasks Completed</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-cyan" id="bar-tasks"></div></div>
+            <div class="metric-value" id="val-tasks" style="color:var(--accent1);">0%</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Coordination Success</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-purple" id="bar-coord"></div></div>
+            <div class="metric-value" id="val-coord" style="color:#a78bfa;">0%</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Explainability Score</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-green" id="bar-xai"></div></div>
+            <div class="metric-value" id="val-xai" style="color:var(--accent4);">0%</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Overall Efficiency</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-amber" id="bar-eff"></div></div>
+            <div class="metric-value" id="val-eff" style="color:var(--accent3);">0%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ ALGORITHM ════════════════ -->
+  <div id="tab-algorithm" class="section">
+    <div class="grid-2">
+      <div class="card cyan">
+        <div class="card-title">Algorithm Walkthrough</div>
+        <p style="font-size:10px;color:var(--muted);margin-bottom:20px;">Click each step to expand explanation</p>
+
+        <div class="algo-step active" onclick="toggleStep(this)">
+          <span class="step-num">01</span>
+          <div class="step-content">
+            <div class="step-title">Initialization</div>
+            <div class="step-detail">Initialize environment E, N agents, high-level policy π<sub>H</sub>, low-level policy π<sub>L</sub>, action-value function Q(s,a) and explainability module X. All parameters randomized at start.</div>
+          </div>
+          <span class="step-badge badge-env">ENV</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">02</span>
+          <div class="step-content">
+            <div class="step-title">Episode Loop Begins</div>
+            <div class="step-detail">Environment is reset. Initial state s is observed by all agents simultaneously. The episode continues until a termination condition is met (task done or max steps).</div>
+          </div>
+          <span class="step-badge badge-env">ENV</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">03</span>
+          <div class="step-content">
+            <div class="step-title">High-Level Policy Selects Macro-Action</div>
+            <div class="step-detail">For each agent i, the high-level policy π<sub>H</sub>(s) selects a macro-action g — a strategic sub-goal like "navigate to zone B" or "collect resource". This abstracts long-horizon planning.</div>
+          </div>
+          <span class="step-badge badge-hl">High-Level</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">04</span>
+          <div class="step-content">
+            <div class="step-title">Low-Level Policy Executes Sub-Action</div>
+            <div class="step-detail">Given the macro-action g, the low-level policy π<sub>L</sub>(s, g) executes a concrete action a — a movement step, resource pick-up, or task substep. Directly interacts with the environment.</div>
+          </div>
+          <span class="step-badge badge-ll">Low-Level</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">05</span>
+          <div class="step-content">
+            <div class="step-title">Reward & State Transition</div>
+            <div class="step-detail">Environment returns next state s' and reward r. Q-value updated: Q(s,a) ← Q(s,a) + α[r + γ max Q(s',a') − Q(s,a)]. Policies π<sub>L</sub> and π<sub>H</sub> updated via gradient descent.</div>
+          </div>
+          <span class="step-badge badge-env">ENV</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">06</span>
+          <div class="step-content">
+            <div class="step-title">XAI Explanation Generated</div>
+            <div class="step-detail">Module X generates explanation E<sub>i</sub> for each agent's decision. Highlights which state features were most influential, justifies the chosen action, and appends to the decision trace log.</div>
+          </div>
+          <span class="step-badge badge-xai">XAI</span>
+        </div>
+
+        <div class="algo-step" onclick="toggleStep(this)">
+          <span class="step-num">07</span>
+          <div class="step-content">
+            <div class="step-title">State Update → Next Step</div>
+            <div class="step-detail">s ← s'. The inner loop repeats for all agents and continues until episode ends. Over 50 epochs, accuracy reaches 96.4% (training) and 95.7% (validation).</div>
+          </div>
+          <span class="step-badge badge-hl">Iterate</span>
+        </div>
+
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="card purple">
+          <div class="card-title">Policy Equations</div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="background:var(--surface2);border-radius:4px;padding:16px;">
+              <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#a78bfa;margin-bottom:8px;">Cumulative Reward</div>
+              <div style="font-size:14px;color:var(--text);font-weight:700;letter-spacing:1px;">R = Σ<sub>t=0</sub><sup>T</sup> r<sub>t</sub></div>
+              <div style="font-size:10px;color:var(--muted);margin-top:6px;">Sum of rewards over all timesteps in an episode</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:4px;padding:16px;">
+              <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#a78bfa;margin-bottom:8px;">Optimal Policy</div>
+              <div style="font-size:14px;color:var(--text);font-weight:700;letter-spacing:1px;">π(a|s) = argmax<sub>a</sub> Q(s,a)</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:6px;">Select action maximizing the action-value function</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:4px;padding:16px;">
+              <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#a78bfa;margin-bottom:8px;">Q-Value Update (Bellman)</div>
+              <div style="font-size:12px;color:var(--text);font-weight:700;letter-spacing:.5px;">Q(s,a) ← Q(s,a) + α[r + γ max Q(s',a') − Q(s,a)]</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:6px;">α = learning rate, γ = discount factor</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card green">
+          <div class="card-title">Pseudocode Summary</div>
+          <pre style="font-size:9px;line-height:1.9;color:var(--muted);overflow-x:auto;"><span style="color:var(--accent1);">INPUT:</span>  Environment E, State S, Action A
+<span style="color:var(--accent1);">OUTPUT:</span> Optimized policies + explanations
+
+Init E, N agents, πH, πL, Q(s,a), X
+<span style="color:var(--accent4);">FOR</span> each episode:
+  Reset E; observe state s
+  <span style="color:var(--accent4);">WHILE</span> not terminated:
+    <span style="color:var(--accent4);">FOR</span> each agent i:
+      g  ← πH(s)          <span style="color:var(--border);"># macro-action</span>
+      a  ← πL(s, g)       <span style="color:var(--border);"># sub-action</span>
+      Apply a to E
+      s', r ← observe
+      Update Q(s,a) via r
+      Update πL, πH
+      Ei ← X.explain(s,a,r) <span style="color:var(--border);"># XAI</span>
+      Store trace + Ei
+      s ← s'
+<span style="color:var(--accent4);">RETURN</span> hierarchical policies, explanations</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ RESULTS ════════════════ -->
+  <div id="tab-results" class="section">
+    <div class="grid-2 section-gap">
+      <div class="card cyan">
+        <div class="card-title">Model Performance Metrics</div>
+        <div class="metric-row">
+          <div class="metric-label">Accuracy — Proposed MARL-HRL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="96.4"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">96.4%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Accuracy — HRL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="94.1" style="opacity:.7;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">94.1%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Accuracy — MARL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="91.7" style="opacity:.5;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">91.7%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Accuracy — Traditional RL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="88.9" style="opacity:.3;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">88.9%</div>
+        </div>
+
+        <div style="height:1px;background:var(--border);margin:20px 0;"></div>
+
+        <div class="metric-row">
+          <div class="metric-label">Precision — Proposed</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-purple result-bar" data-val="95.9"></div></div>
+          <div class="metric-value" style="color:#a78bfa;">95.9%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Recall — Proposed</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-green result-bar" data-val="97.1"></div></div>
+          <div class="metric-value" style="color:var(--accent4);">97.1%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">F1-Score — Proposed</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-amber result-bar" data-val="96.5"></div></div>
+          <div class="metric-value" style="color:var(--accent3);">96.5%</div>
+        </div>
+      </div>
+
+      <div class="card purple">
+        <div class="card-title">Coordination Efficiency</div>
+        <div class="metric-row">
+          <div class="metric-label">Task Completion — Proposed</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="96.2"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">96.2%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Task Completion — HRL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="92.6" style="opacity:.7;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">92.6%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Task Completion — MARL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="88.9" style="opacity:.5;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">88.9%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Task Completion — Trad. RL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-cyan result-bar" data-val="82.4" style="opacity:.3;"></div></div>
+          <div class="metric-value" style="color:var(--accent1);">82.4%</div>
+        </div>
+
+        <div style="height:1px;background:var(--border);margin:20px 0;"></div>
+
+        <div class="sub-title">Average Decision Time (ms) — lower is better</div>
+        <div class="metric-row">
+          <div class="metric-label">Traditional RL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-amber result-bar" data-val="97" style="opacity:.3;"></div></div>
+          <div class="metric-value" style="color:var(--accent3);">145 ms</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">MARL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-amber result-bar" data-val="88" style="opacity:.5;"></div></div>
+          <div class="metric-value" style="color:var(--accent3);">132 ms</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">HRL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-amber result-bar" data-val="79" style="opacity:.7;"></div></div>
+          <div class="metric-value" style="color:var(--accent3);">118 ms</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Proposed MARL-HRL</div>
+          <div class="metric-bar-wrap"><div class="metric-bar bar-green result-bar" data-val="69"></div></div>
+          <div class="metric-value" style="color:var(--accent4);">103 ms</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card amber">
+      <div class="card-title">Training Curve — Accuracy & Loss over 50 Epochs</div>
+      <canvas id="chart-canvas" height="220"></canvas>
+      <div class="chart-legend">
+        <span><span class="legend-dot" style="background:var(--accent1);"></span>Train Accuracy</span>
+        <span><span class="legend-dot" style="background:#a78bfa;"></span>Val Accuracy</span>
+        <span><span class="legend-dot" style="background:var(--accent3);border:2px dashed var(--accent3);background:transparent;"></span>Train Loss</span>
+        <span><span class="legend-dot" style="background:var(--accent4);border:2px dashed var(--accent4);background:transparent;"></span>Val Loss</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ COMPARISON ════════════════ -->
+  <div id="tab-compare" class="section">
+    <div class="card cyan section-gap">
+      <div class="card-title">Method Comparison</div>
+      <table class="comp-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Accuracy</th>
+            <th>Coord. Efficiency</th>
+            <th>Decision Transparency</th>
+            <th>Learning Stability</th>
+            <th>Explainability</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--muted);">Traditional RL</td>
+            <td style="color:var(--text);">88.9%</td>
+            <td style="color:var(--text);">84.5%</td>
+            <td><span class="chip chip-low">Low</span></td>
+            <td><span class="chip chip-med">Medium</span></td>
+            <td><span class="chip chip-low">None</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);">Multi-Agent RL (MARL)</td>
+            <td style="color:var(--text);">91.7%</td>
+            <td style="color:var(--text);">89.7%</td>
+            <td><span class="chip chip-low">Low</span></td>
+            <td><span class="chip chip-med">Medium</span></td>
+            <td><span class="chip chip-low">None</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);">Hierarchical RL (HRL)</td>
+            <td style="color:var(--text);">94.1%</td>
+            <td style="color:var(--text);">92.8%</td>
+            <td><span class="chip chip-med">Medium</span></td>
+            <td><span class="chip chip-high">High</span></td>
+            <td><span class="chip chip-med">Partial</span></td>
+          </tr>
+          <tr class="highlight">
+            <td style="color:var(--accent1);font-weight:700;">Proposed MARL-HRL + XAI ✦</td>
+            <td style="color:var(--accent4);font-weight:700;">96.4%</td>
+            <td style="color:var(--accent4);font-weight:700;">96.4%</td>
+            <td><span class="chip chip-high">High</span></td>
+            <td><span class="chip chip-high">High</span></td>
+            <td><span class="chip chip-high">Full</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid-2">
+      <div class="card purple">
+        <div class="card-title">Why XAI Matters in Autonomous Systems</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:18px;">🚗</span>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:3px;">Autonomous Driving</div>
+              <div style="font-size:10px;color:var(--muted);">Regulators require explanation for every decision. Black-box RL cannot be certified without interpretability.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:18px;">🏥</span>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:3px;">Medical Systems</div>
+              <div style="font-size:10px;color:var(--muted);">Doctors and patients must trust AI decisions. Traceability enables accountability and error review.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:18px;">🏭</span>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:3px;">Manufacturing Automation</div>
+              <div style="font-size:10px;color:var(--muted);">Safety protocols require understanding of robot coordination choices to prevent accidents.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:18px;">🚁</span>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:3px;">Robotic Swarms</div>
+              <div style="font-size:10px;color:var(--muted);">Search & rescue missions require human operators to understand swarm decisions and intervene when needed.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card green">
+        <div class="card-title">Research Gap Filled</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:4px;padding:14px;">
+            <div style="font-size:10px;font-weight:700;color:#f87171;margin-bottom:6px;">❌ Existing Gap</div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.7;">Most MARL and HRL models are black-box systems with no mechanism for interpretability. Performance-only optimizations limit real-world deployment in safety-critical domains.</div>
+          </div>
+          <div style="background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2);border-radius:4px;padding:14px;">
+            <div style="font-size:10px;font-weight:700;color:var(--accent4);margin-bottom:6px;">✅ This Paper's Solution</div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.7;">Integrates XAI directly into the HRL training loop. Every agent decision generates a human-readable explanation. Decision traceability enables debugging, certification, and trust-building.</div>
+          </div>
+          <div style="background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.2);border-radius:4px;padding:14px;">
+            <div style="font-size:10px;font-weight:700;color:var(--accent1);margin-bottom:6px;">🔮 Future Work</div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.7;">Extension to intelligent transport networks, robotic swarms, advanced deep RL models, adaptive agent communication protocols, and richer explainability methods.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>EXPLAINABLE MULTI-AGENT AI FRAMEWORK · Tammireddy & Singh · MLRITM Hyderabad</footer>
+</div>
+
+<script>
+// ── TAB SWITCHING ──
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'results') setTimeout(animateBars, 100);
+}
+
+// ── LAYER EXPAND ──
+function toggleLayer(el, id) {
+  // just visual pop
+  el.style.transform = 'translateX(8px)';
+  setTimeout(() => el.style.transform = '', 200);
+}
+
+// ── ALGO STEP TOGGLE ──
+function toggleStep(el) {
+  const wasActive = el.classList.contains('active');
+  document.querySelectorAll('.algo-step').forEach(s => s.classList.remove('active'));
+  if (!wasActive) el.classList.add('active');
+}
+
+// ── RESULT BARS ANIMATION ──
+function animateBars() {
+  document.querySelectorAll('.result-bar').forEach(bar => {
+    const val = parseFloat(bar.dataset.val) || 0;
+    bar.style.width = val + '%';
+  });
+}
+
+// ── TRAINING CHART ──
+function drawChart() {
+  const canvas = document.getElementById('chart-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth;
+  canvas.width = W; canvas.height = 220;
+  const PAD = { top: 20, right: 20, bottom: 40, left: 44 };
+  const CW = W - PAD.left - PAD.right;
+  const CH = 220 - PAD.top - PAD.bottom;
+
+  function lerp(a,b,t){ return a+(b-a)*t; }
+  // Simulated epoch data (0-50)
+  const epochs = Array.from({length:11},(_,i)=>i*5);
+
+  function genCurve(start,end,noise){
+    return epochs.map((e,i)=>{
+      const t = i/10;
+      const sigmoid = 1/(1+Math.exp(-8*(t-0.4)));
+      return start + (end-start)*sigmoid + (Math.random()-.5)*noise;
+    });
+  }
+
+  const trainAcc = [72,78,83,87,90,92,93.5,94.5,95.5,96.1,96.4];
+  const valAcc   = [70,76,81,86,89,91,92.8,93.9,94.8,95.4,95.7];
+  const trainLoss= [1.2,0.95,0.75,0.58,0.44,0.34,0.27,0.22,0.18,0.16,0.14];
+  const valLoss  = [1.3,1.02,0.82,0.64,0.49,0.38,0.30,0.25,0.21,0.19,0.17];
+
+  ctx.fillStyle = '#0d1521';
+  ctx.fillRect(0,0,W,220);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(30,58,95,0.6)';
+  ctx.lineWidth = 1;
+  for(let g=0;g<=5;g++){
+    const y = PAD.top + (g/5)*CH;
+    ctx.beginPath(); ctx.moveTo(PAD.left,y); ctx.lineTo(PAD.left+CW,y); ctx.stroke();
+  }
+  for(let g=0;g<=10;g++){
+    const x = PAD.left + (g/10)*CW;
+    ctx.beginPath(); ctx.moveTo(x,PAD.top); ctx.lineTo(x,PAD.top+CH); ctx.stroke();
+  }
+
+  function plotLine(data, color, dashed, minV, maxV) {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash(dashed ? [5,4] : []);
+    data.forEach((v,i)=>{
+      const x = PAD.left + (i/10)*CW;
+      const norm = (v-minV)/(maxV-minV);
+      const y = PAD.top + CH - norm*CH;
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // dots
+    data.forEach((v,i)=>{
+      const x = PAD.left + (i/10)*CW;
+      const norm = (v-minV)/(maxV-minV);
+      const y = PAD.top + CH - norm*CH;
+      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2);
+      ctx.fillStyle = color; ctx.fill();
+    });
+  }
+
+  // Accuracy (right axis: 65-100)
+  plotLine(trainAcc,'#00d4ff',false,65,100);
+  plotLine(valAcc,'#a78bfa',false,65,100);
+
+  // Loss (right axis scaled: 0-1.4 → mapped to same space)
+  plotLine(trainLoss.map(v=>65+(v/1.4)*35),'#f59e0b',true,65,100);
+  plotLine(valLoss.map(v=>65+(v/1.4)*35),'#10b981',true,65,100);
+
+  // Axis labels
+  ctx.fillStyle = '#637a99';
+  ctx.font = '9px Space Mono, monospace';
+  ctx.textAlign = 'right';
+  ['100%','93%','86%','79%','72%','65%'].forEach((l,i)=>{
+    ctx.fillText(l, PAD.left-6, PAD.top + (i/5)*CH + 3);
+  });
+  ctx.textAlign = 'center';
+  epochs.forEach((e,i)=>{
+    ctx.fillText('Ep'+e, PAD.left + (i/10)*CW, 220-PAD.bottom+14);
+  });
+}
+
+// ── SIMULATION ──
+let simInterval = null;
+let simRunning = false;
+let simTick = 0;
+
+const AGENTS = [
+  {id:'A1',x:80, y:80, tx:0,ty:0,color:'#00d4ff',goal:'navigate',score:0,status:'idle'},
+  {id:'A2',x:280,y:80, tx:0,ty:0,color:'#a78bfa',goal:'collect',score:0,status:'idle'},
+  {id:'A3',x:80, y:220,tx:0,ty:0,color:'#f59e0b',goal:'defend',score:0,status:'idle'},
+  {id:'A4',x:280,y:220,tx:0,ty:0,color:'#10b981',goal:'explore',score:0,status:'idle'},
+];
+const TASKS = [
+  {x:190,y:60,done:false,label:'T1'},
+  {x:320,y:140,done:false,label:'T2'},
+  {x:60, y:160,done:false,label:'T3'},
+  {x:220,y:240,done:false,label:'T4'},
+  {x:140,y:130,done:false,label:'T5'},
+  {x:300,y:60,done:false,label:'T6'},
+];
+
+const EXPLANATIONS = [
+  (a,g) => `<span class="agent">[${a}]</span> High-level policy selected <span class="action">${g}</span> macro-action based on proximity heuristic`,
+  (a,g) => `<span class="agent">[${a}]</span> Low-level policy executing sub-action toward <span class="action">${g}</span> — reward gradient +0.${Math.floor(Math.random()*9)+1}`,
+  (a,g) => `<span class="agent">[${a}]</span> XAI: key feature = <span class="reason">distance_to_task</span>. Chose <span class="action">${g}</span> (Q-val: ${(Math.random()*0.4+0.6).toFixed(3)})`,
+  (a,g) => `<span class="agent">[${a}]</span> Coordination — avoided overlap with <span class="action">neighbor agent</span> via reward sharing`,
+  (a,g) => `<span class="agent">[${a}]</span> Policy trace: s→a→s' logged. Transparency score ↑ <span class="reason">(+2.3%)</span>`,
+];
+
+let agents, tasks, tasksDone, simMetrics;
+
+function resetSim() {
+  clearInterval(simInterval); simInterval = null; simRunning = false;
+  document.getElementById('sim-toggle').textContent = '▶ Start';
+  document.getElementById('sim-toggle').classList.remove('running');
+  simTick = 0;
+  agents = AGENTS.map(a=>({...a,x:a.x,y:a.y,tx:a.x,ty:a.y,score:0,status:'idle'}));
+  tasks  = TASKS.map(t=>({...t,done:false}));
+  tasksDone = 0;
+  simMetrics = {tasks:0,coord:0,xai:0,eff:0};
+  setMetrics(0,0,0,0);
+  document.getElementById('exp-feed').innerHTML = '<div class="log-entry" style="color:var(--muted);">// Simulation reset. Press ▶ Start to run agents.</div>';
+  renderAgentStatus();
+  drawSim();
+}
+
+function toggleSim() {
+  if (simRunning) {
+    clearInterval(simInterval); simRunning = false;
+    document.getElementById('sim-toggle').textContent = '▶ Start';
+    document.getElementById('sim-toggle').classList.remove('running');
+  } else {
+    simRunning = true;
+    document.getElementById('sim-toggle').textContent = '⏸ Pause';
+    document.getElementById('sim-toggle').classList.add('running');
+    simInterval = setInterval(simStep, 180);
+  }
+}
+
+function simStep() {
+  simTick++;
+  // Move agents toward nearest incomplete task
+  agents.forEach((ag,i)=>{
+    const incomplete = tasks.filter(t=>!t.done);
+    if (!incomplete.length) return;
+    // Each agent targets a different task
+    const target = incomplete[i % incomplete.length];
+    if (!target) return;
+    ag.status = 'active';
+    const dx = target.x - ag.x, dy = target.y - ag.y;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    if (dist < 14) {
+      target.done = true; tasksDone++;
+      ag.status = 'completed';
+      ag.score++;
+      addLog(EXPLANATIONS[2](ag.id, ag.goal));
+    } else {
+      ag.x += (dx/dist)*4 + (Math.random()-.5)*1.5;
+      ag.y += (dy/dist)*4 + (Math.random()-.5)*1.5;
+      if(Math.random()<0.15) addLog(EXPLANATIONS[Math.floor(Math.random()*EXPLANATIONS.length)](ag.id, ag.goal));
+    }
+  });
+
+  const pct = (tasksDone/TASKS.length)*100;
+  setMetrics(
+    Math.min(100, pct + Math.random()*2),
+    Math.min(100, pct*0.99 + Math.random()*3),
+    Math.min(100, 50 + simTick*1.5 + Math.random()*4),
+    Math.min(100, pct*0.98 + Math.random()*2)
+  );
+
+  renderAgentStatus();
+  drawSim();
+
+  if (tasks.every(t=>t.done)) {
+    clearInterval(simInterval); simRunning = false;
+    document.getElementById('sim-toggle').textContent = '✓ Done';
+    addLog('<span style="color:var(--accent4);">// ✓ All tasks completed! Final coordination success.</span>');
+  }
+}
+
+function addLog(html) {
+  const feed = document.getElementById('exp-feed');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  const t = String(simTick).padStart(3,'0');
+  entry.innerHTML = `<span style="color:var(--border);">[${t}]</span> ${html}`;
+  feed.appendChild(entry);
+  feed.scrollTop = feed.scrollHeight;
+  // Keep feed trim
+  while(feed.children.length > 30) feed.removeChild(feed.firstChild);
+}
+
+function setMetrics(t,c,x,e) {
+  document.getElementById('bar-tasks').style.width = t+'%';
+  document.getElementById('bar-coord').style.width = c+'%';
+  document.getElementById('bar-xai').style.width   = x+'%';
+  document.getElementById('bar-eff').style.width   = e+'%';
+  document.getElementById('val-tasks').textContent = Math.round(t)+'%';
+  document.getElementById('val-coord').textContent = Math.round(c)+'%';
+  document.getElementById('val-xai').textContent   = Math.round(x)+'%';
+  document.getElementById('val-eff').textContent   = Math.round(e)+'%';
+}
+
+function renderAgentStatus() {
+  const el = document.getElementById('agent-status');
+  el.innerHTML = agents.map(ag=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:4px;border:1px solid var(--border);">
+      <div style="width:10px;height:10px;border-radius:50%;background:${ag.color};box-shadow:0 0 6px ${ag.color};"></div>
+      <div style="flex:1;">
+        <div style="font-size:10px;font-weight:700;color:${ag.color};">${ag.id}</div>
+        <div style="font-size:9px;color:var(--muted);">Goal: <span style="color:${ag.color};">${ag.goal}</span> | Tasks: ${ag.score}</div>
+      </div>
+      <div style="font-size:9px;color:${ag.status==='active'?'var(--accent3)':ag.status==='completed'?'var(--accent4)':'var(--muted)'};">${ag.status}</div>
+    </div>
+  `).join('');
+}
+
+function drawSim() {
+  const canvas = document.getElementById('sim-canvas');
+  const wrap = document.getElementById('sim-canvas-wrap');
+  const W = wrap.clientWidth - 32;
+  canvas.width = W; canvas.height = 300;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0,0,W,300);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(30,58,95,0.4)';
+  ctx.lineWidth = 1;
+  for(let x=0;x<W;x+=40){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,300);ctx.stroke(); }
+  for(let y=0;y<300;y+=40){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke(); }
+
+  const scaleX = W/380, scaleY = 300/280;
+
+  // Draw tasks
+  tasks.forEach(t=>{
+    const tx = t.x*scaleX, ty = t.y*scaleY;
+    ctx.beginPath();
+    ctx.arc(tx,ty,10,0,Math.PI*2);
+    ctx.fillStyle = t.done ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.15)';
+    ctx.fill();
+    ctx.strokeStyle = t.done ? '#10b981' : '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = t.done ? '#10b981' : '#f59e0b';
+    ctx.font = 'bold 9px Space Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(t.done ? '✓' : t.label, tx, ty+3);
+  });
+
+  // Draw agent paths (faint trail)
+  agents.forEach(ag=>{
+    const ax = ag.x*scaleX, ay = ag.y*scaleY;
+    // Glow
+    const grd = ctx.createRadialGradient(ax,ay,0,ax,ay,18);
+    grd.addColorStop(0, ag.color+'44');
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(ax,ay,18,0,Math.PI*2); ctx.fill();
+    // Agent circle
+    ctx.beginPath(); ctx.arc(ax,ay,8,0,Math.PI*2);
+    ctx.fillStyle = ag.color+'33'; ctx.fill();
+    ctx.strokeStyle = ag.color; ctx.lineWidth = 2; ctx.stroke();
+    // Label
+    ctx.fillStyle = ag.color;
+    ctx.font = 'bold 9px Space Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(ag.id, ax, ay+3);
+  });
+
+  // Legend
+  ctx.fillStyle = 'rgba(0,212,255,0.6)'; ctx.font = '9px Space Mono'; ctx.textAlign = 'left';
+  ctx.fillText(`⬤ Agents  ⬡ Tasks  ✓ Done`, 8, 292);
+}
+
+// ── INIT ──
+window.addEventListener('load', ()=>{
+  resetSim();
+  animateBars();
+  setTimeout(drawChart, 200);
+  renderAgentStatus();
+});
+
+window.addEventListener('resize', ()=>{ drawChart(); drawSim(); });
+</script>
+</body>
+</html>
