@@ -166,7 +166,7 @@ const preliminary = [
   ctr("Under the Guidance of", { size: 24, after: 80 }),
   ctr("Dr. S. Pratap Singh", { size: 26, bold: true, after: 80 }),
   ctr("Professor, Department of Computer Science and Engineering", { size: 24, after: 500 }),
-  ctr("Academic Year: 2024–2025", { size: 24, after: 100 }),
+  ctr("Academic Year: 2024-2025", { size: 24, after: 100 }),
   pb(),
 
   // DECLARATION

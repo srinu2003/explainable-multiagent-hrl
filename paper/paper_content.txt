@@ -1,0 +1,195 @@
+Explainable Multi-Agent AI Framework for Autonomous System Coordination Using Hierarchical Reinforcement Learning 
+
+Srinivas Rao Tammireddy M. Tech Scholar, Department of Computer Science and EngineeringMarri Laxman Reddy Institute of Technology and ManagementDundigal, Hyderabad, Indiapsrin2003@gmail.com
+Dr S Pratap Singh Professor, Department of Computer Science and EngineeringMarri Laxman Reddy Institute of Technology and ManagementDundigal, Hyderabad, Indiapratap.singh.s@gmail.com
+
+
+
+Abstract—The growing use of autonomous systems in dynamic and complex environments needs an intelligent coordination mechanism that guarantees efficiency, scalability and transparency. The proposed study is an Explainable Multi-Agent Artificial Intelligence (AI) coordination of an autonomous system based on Hierarchical Reinforcement Learning (HRL). The framework combines the cooperation of multi-agents and the hierarchical decision-making process to allow the agents to act at high-level task planning and low-level action implementation. Furthermore, explainability mechanisms are also added to enhance the interpretability and trust in agent decision making. The evaluation of the proposed model was based on simulated autonomous coordination scenarios and compared with the traditional reinforcement learning and centralized control methods. The experimental findings indicate that the predicted framework has a training accuracy of 96.4% and validation accuracy of 95.7% with less training loss (0.14) and validation loss (0.17) after 50 epochs. The analysis of ROC also suggests a good classification ability and high true positive and low false positive. The findings of these studies affirm that the framework is very effective in enhancing efficiency of co-ordination, learning and decision transparency. The suggested solution is scalable to the next-generation autonomous systems that can be used in the distributed and intelligent environments.
+Keywords—Multi- Agent systems, Explainable AI, Hierarchical reinforcement learning, Autonomous Systems, AI coordination
+Introduction 
+Autonomous systems are being used more and more in complex and dynamic environments where a number of intelligent entities have to operate together to achieve common goals [1]. Some of them are robotic swarms that can carry out search and rescue missions, intelligent transportation systems that control traffic, and distributed sensor networks that look at the environment [2]. In this case, it is vital to have effective coordination between the various agents in a manner that the tasks are performed correctly, safely and within a manageable time limit. The conventional methods of coordination that are based on rules have been found to have inadequate ability to cope with the dynamics and vagaries of circumstances; this has prompted scholars to consider the use of learning based methods to carry out autonomous coordination [3]. Multi-Agent Reinforcement Learning (MARL) has become an effective approach to empowering multiple agents to learn the behavior of cooperation with the environment via ongoing interaction with it [4]. MARL models have agents that observe and act on what is going on in the environment and get rewards that inform the learning process [5]. Agents over time come up with policies that enable them to maximise their overall performance as they adapt to changing circumstances. These methods have demonstrated good results in collaborative robotics, distributed decision making system, and autonomous vehicle coordination. Nevertheless, most MARL models are complex black-box systems in spite of their effectiveness. Internal decision making processes of these models are not easy to interpret and in this respect, it is not easy to know why the agents do certain things as they do [6]. 
+The inability to make reinforcement learning models transparent is also a major problem, especially when they are applied to safety-critical scenarios like autonomous driving, medical systems, and manufacturing automation. In such settings, not only should the system operate well but the decisions that it makes should be open to interpretation and should be trusted. It is challenging to debug system failures, assure that regulatory standards are met and achieve user confidence without clear explanations of agent behavior. 
+Hierarchical Reinforcement Learning is a potential method to tackle the challenges of scalability and complexity of the classical approaches to reinforcement learning [7]. HRL breaks down complicated tasks into various levels of abstraction, a high level policy specifies the overall strategies or sub-goals and the low-level policy implements particular actions needed to accomplish these objectives [8]. This hierarchical design makes agents learn in a better way since it is concerned with small manageable sub tasks and a global coordination goal. 
+The current paper suggests an Explainable Multi- Agent Artificial Intelligence system which combines hierarchical reinforcement learning with explainability. The architecture is intended to enhance the efficiency in coordination efforts of autonomous agents and at the same time allow the insight of their decision-making process to be discernible. The proposed approach will contribute to transparency, learners can better track agent behavior, and autonomous multi-agent systems can be deployed in real-life situations where accountability and trust are paramount because of the presence of explainable AI methods in the hierarchical learning architecture.
+Key Contributions
+Construction of an understandable multi-agent coordination model. 
+Direct application of hierarchical reinforcement learning to make decisions at scale. 
+Implementation of an explainability component to understand agent policies. 
+Efficiency and transparency of autonomous systems. 
+Experimental validation of the performance improvement over the conventional MARL approaches.
+The rest of this paper is structured in the following way. In Section II, the Related Work, the available research on multi-agent reinforcement learning, hierarchical learning, and explainable artificial intelligence methods in autonomous systems are discussed. Section III explains the Proposed Methodology, such as the discussable multi-agent architecture, hierarchical reinforcement learning model and the explainability module which interprets agent decisions. Experimental Results and Discussion Section IV include the evaluation of the research performance of the proposed framework through the assistance of numerous metrics and comparing it with the existing approaches to the baseline. Lastly, the paper ends with Section V that summarizes the most important results and outlines the possible future research directions.
+Literature review
+The multi-agent reinforcement learning has been embraced broadly in order to enhance coordination of autonomous systems in dynamic environments. Hierarchical reinforcement learning methodology was advanced to enhance goal-oriented coordination among several agents through breaking complex problems into hierarchical levels of decision-makers. The framework allows the agents to choose high-level coordinative strategies when implementing low-level action to complete the tasks. The experimental findings showed that the efficiency of coordination and the stability of learning in multi-agent conditions were better. Nevertheless, the suggested approach is mainly concerned with task based coordination and does not provide any mechanism of understanding the decision making process of the agents thereby minimizing transparency in practice [9]. 
+In the other research, a coordination system was proposed in multi agent reinforcement learning that operates under dual collaborative constraints to achieve collaboration of agents. The strategy enhances policy learning by combining collaborative constraints that direct agent interactions in training. Experimental analysis demonstrated that there was a marked improvement in accuracy in coordination and convergence speed than the traditional models of reinforcement learning. Although these are the benefits, the structure fails to consider the problem of interpretability, and extensively incorporates centralized training approaches, which can make large distributed systems less scalable [10].
+It has also developed hierarchical task network-enhanced reinforcement learning to enhance cooperative strategies when individuals are in a multi-agent setting. The combination of task network planning and reinforcement learning allows the agents to carry out systematized decision-making and handle intricate tasks more effectively. The outcome shows increased efficiency in coordination and speed of convergence. However, the structure adds to the computational complexity and fails to offer explicable results of the policy decisions made by the agents [11]. 
+The other coordination style is the model where multi-agent reinforcement learning is treated like an inference problem in order to improve the collaborative decision-making. The framework applies probabilistic inference to approximate the optimal policies and enhance the cooperation of the agents. The approach has good performance in the dynamic environments because it is effective in capturing the inter-agent dependencies. But the model that relies on inferences only adds computational cost and remains a black-box system that is not transparent on explaining the agent behaviors [12]. 
+This hierarchy of reinforcement learning coupled with opponent modeling has also been utilized in command and control systems to enhance strategic decision making in multi agent systems. The hierarchy enables the agents to simulate the adversarial behavior and make optimum strategies on their part. The outcomes of the experiments indicate a better efficiency and flexibility in decision making in complicated situations. Although helpful, the method is primarily concerned with adversarial interactions and lacks explainability or transparency in the respective decisions made by the agents in coordinating [13]. 
+Hierarchical deep reinforcement learning has been used to solve multiple agent distributed job shop scheduling problems in industrial settings. The model breaks down scheduling activities into hierarchical policies which allows agents to better cope with dynamic job arrivals. The findings show that there is better scheduling and resource utilization than in the traditional scheduling techniques. The model however is domain specific and has no generalized coordination mechanism that can be applied to larger autonomous systems [14]. 
+The process allows robots to reach a consensus by hierarchical coordination policies that enhances performance of task execution and scalability of the system. The experimental findings illustrate cooperative work in robotic mechanisms which are improved. However, the framework is heavily concentrated on performance in terms of coordination and fails to embrace explainable AI methods to analyse the decision-making process of agents [15]. 
+The literature proves that hierarchical reinforcement learning is effective in enhancing the alignment of multi-agent systems. Nevertheless, the majority of methods concern mostly performance optimization without taking into account interpretability and transparency. Current frameworks of multi-agent reinforcement learning do not have explainable mechanisms which restricts their use in safety-critical autonomous systems. Thus, there is a need to have an integrated framework that integrates hierarchical reinforcement learning with explainable artificial intelligence to enhance the efficiency of coordination and interpretability of autonomous multi-agent systems.
+Research Gap
+Even though multi agent reinforcement learning offers good coordination ability, majority of the current models are not interpretable and transparent. The existing HRL-based models are primarily performance-oriented and do not pay much attention to explainability. Moreover, the policies of coordination are usually hard to decipher within the complicated surroundings. It has missing integrated frameworks that can be used to integrate hierarchical learning with mechanisms of explainable decision-making. This limitation is critical to overcome to increase the trust in the autonomous AI systems deployment.
+research methodology
+The suggested Explainable Multi-Agent AI model aims at providing the ability to organize the autonomous agent effectively and at the same time keep the decision-making process transparent. The architecture combines the reinforcement learning with explainability methods to enhance the performance and explainability of multi-agent environments. The system has three significant parts, such as the Multi-Agent Coordination Layer, the Hierarchical Reinforcement Learning (HRL) Module, and the Explainability Engine.
+
+Proposed Explainable Multi-Agent HRL Framework Architecture
+System Architecture
+Multi-Agent Coordination Layer It works with the problem of interaction and cooperation between multiple autonomous agents that act in a shared environment. Agents in this layer share state data, organize their activities, and change their strategies depending on the environmental feedback and the shared goals. The coordination mechanism makes sure that agents act in a way that allows them to maximize global rewards without conflicts and also without overlapping efforts. There are methods to share rewards and communication protocols which help to encourage cooperative behavior and make the systems efficient. 
+The main learning module of the framework is the Hierarchical Reinforcement Learning Module. It is a module that breaks down complex decision making processes into hierarchical layers to enhance scalability and learning effectiveness. The framework enables the agents to emphasize the strategic planning on higher levels and the implementation of specific actions on lower levels by splitting the learning process into several levels of abstraction. Such a hierarchical system simplifies the process of policy learning and makes agents better able to adjust to changing situations. 
+The Explainability Engine is part of the architecture to make sense out of the decisions taken by the reinforcement learning models. The explainability module has been utilized to provide an understanding of the reasoning behind the actions of agents since reinforcement learning models are commonly black-box systems. It breaks down the policy choices, state transitions, and rewards to create explanations human beings can easily comprehend. This element enhances transparency and, it allows the system developers to observe, test, and debug the actions of autonomous agents.
+ Hierarchical Reinforcement Learning Model
+The suggested HRL model divides the decision-making process into two primary policy levels, including a high-level policy and a low-level policy. 
+The High-Level Policy works at the strategic level and it is the one that chooses macro-actions or sub-goals that inform the behavior of agents. These macro-actions are high level coordination strategies like in distributing the tasks or the route or the distribution of resources. Concentrating on the long-term goals, the high-level policy has the advantage of making sure that the agents have a coordinated behavior over several steps in time. 
+The Low-Level Policy is credited with conducting minute activities that are necessary in accomplishing the sub-goals chosen by the high-level policy. These activities can involve the choice of movements, resource gathering, or task performance stages in the environment. The low-level policy is in a constant interaction with the environment, monitors the changes of states, and alters its behaviour to maximize rewards. 
+The reward-based optimization mechanism determines the learning process. The total reward a particular agent receives in an defines is (1).
+                                                    (1)
+where   is the reward received at time  and  is the sum of the steps in the episode. Reinforcement learning algorithm aims at maximizing this cumulative reward by learning optimal policies. 
+The process of policy optimization is given as (2).
+                            (2)
+In which  is a current state of the environment ,  is the action chosen by the agent, and  is the action-value function which tries to estimate the future reward that is expected to result by the execution of action  in state . The agents adjust their policies by interacting with the environment repeatedly, to choose actions that maximise long term rewards but at the same time, they need to coordinate their actions as the other agents.
+Explainability Module
+The Explainability Module is important to enhance transparency and interpretability of the proposed framework. The learned policies can be interpretable in most of the reinforcement learning systems since the models use the complex neural network representations. In order to overcome this shortcoming, the explainability module examines how the agents make decisions and provides interpretable explanations of the chosen actions. Some of the factors that are considered in the module are the perceived state of the environmental surroundings, the chosen course of action and the rewarding signals. With the above factors analysed, the system determines the most prominent features that affect the decision that agents make and points out the rationales in policy choices. 
+The explainability engine offers three significant features. The former is the justification of action, which describes the reasons why a certain action was chosen by an agent during a specific time step. This enables operators of systems to have an insight into the logic used by agents. The second capability is the ability of policy visualization that displays both graphical views of decision policies and coordination patterns of the agents. These representations are useful to assist the researchers to analyze the progress of learning and pinpoint areas that can be improved by policy. The third one is a decision traceability that records the chronology of decisions made by agents in the course of conducting tasks. The given feature allows developers to study the behavior of agents over time and define which factors affect coordination strategies. With the introduction of the explainability aspect into the reinforcement learning framework, the proposed system will increase the levels of trust, accountability and transparency in autonomous multi-agent systems. 
+Algorithm 1: Explainable Multi-Agent Coordination using Hierarchical Reinforcement Learning
+Input: Multi-agent environment E, state space S, action space A
+Output: Optimized coordination policies with explanations
+1: Initialize environment E
+2: Initialize N agents with high-level policy πH and low-level policy πL
+3: Initialize action-value function Q(s,a)
+4: Initialize explanation module X
+5: For each episode do
+6:     Reset environment and observe initial state s
+7:     While termination condition not reached do
+8:         For each agent i ∈ N do
+9:             Select macro-action g using high-level policy πH(s)
+10:            Execute sub-action a using low-level policy πL(s, g)
+11:            Apply action a to environment
+12:            Observe next state s' and reward r
+13:            Update Q(s,a) using reward r
+14:            Update low-level policy πL
+15:            Update high-level policy πH
+16:            Generate explanation Ei using module X
+17:            Store decision trace and explanation
+18:            Update state s ← s'
+19:        End for
+20:     End while
+21: End for
+22: Return optimized hierarchical policies and explanations
+The given algorithm starts with setting up the multi-agent environment, as well as the necessary state and action space. The high-level policy chooses the strategies or the macro-actions of coordination and the low-level policy defines the actions to be taken in order to complete the work. There is also an action-value function that is initialized to approximate the expected value of actions in a state, and there is an explainability module that is also introduced to produce interpretable information about the actions of agents. 
+The agents are provided with the initial system state and environment is reset every training episode. The process of learning is repeated until a termination state like completion of a task or maximum steps is achieved. In each step, the agents are guided by the high-level policy to identify a macro-action and then the low-level policy to identify a particular action. Once the action has been carried out, the environment will give a new state and a reward value that the effectiveness of an action.
+result and discussion
+The experimental results demonstrate that the proposed explainable multi-agent hierarchical reinforcement learning framework significantly improves coordination performance compared to traditional reinforcement learning approaches. The hierarchical learning structure enhances task decomposition and enables agents to learn efficient coordination strategies in dynamic environments. Additionally, the training results show steady improvement in reward values and reduction in loss, confirming the stability of the learning process. The explainability module further improves transparency by providing interpretable insights into agent decisions, making the framework suitable for real-world autonomous system applications.
+Experimental Outcome
+The experimental findings prove that the proposed explainable multi-agent hierarchical reinforcement learning framework can be used to achieve remarkable performance in terms of coordination compared to the conventional reinforcement learning procedures.The model is more accurate, precise, recalls and has better F1-score which means that it makes more reliable decisions among autonomous agents. The hierarchical learning form helps to break down tasks and also allows the agents to acquire effective coordination methods in non-stagnant settings. Also, the training outcomes indicate the gradual increase in the values of rewards and decrease in the loss, which attests the consistency of the learning process. The explainability module also enhances transparency as it delivers interpretable information about agent choices which makes the framework applicable in the real world setting of autonomous systems.
+Model Performance 
+Method
+Accuracy (%)
+Precision (%)
+Recall (%)
+F1-Score (%)
+Traditional Reinforcement Learning
+88.9
+87.6
+89.5
+88.5
+Multi-Agent Reinforcement Learning
+91.7
+90.8
+92.3
+91.5
+Hierarchical Reinforcement Learning
+94.1
+93.5
+94.8
+94.1
+Proposed Explainable Multi-Agent HRL
+96.4
+95.9
+97.1
+96.5
+This table estimates the efficiency of coordination of the proposed framework. Task completion rate is used to evaluate the effectiveness of agents in accomplishing the tasks given to them and coordination success is used to evaluate the collaboration of the agents in the process. The average decision time is the duration needed by the agents to decide on the approach. The proposed framework has the best odds of completing the tasks and achieving the best coordination rates as well as minimizes the decision time, which means a better efficiency of autonomous system coordination.
+Coordination Efficiency Evaluation
+Method
+Task Completion Rate (%)
+Coordination Success (%)
+Average Decision Time (ms)
+Traditional RL
+82.4
+80.6
+145
+MARL
+88.9
+87.5
+132
+HRL
+92.6
+91.8
+118
+Proposed Explainable MARL-HRL
+96.2
+95.4
+103
+The graph tests the functionality of the explainability feature of the proposed framework. The accuracy of action explanations is a measure of the accuracy with which the system explains actions of the agents. Decision trace consistency is a measure that shows the accuracy of the explanation in more than one decision steps. The policy transparency score represents the clarity of the learned policies as perceived by the users whereas the interpretability rating is the level of clarity of an explanation generated. All the metrics expressing the high scores prove that the explainability module is effective to increase the transparency in the multi-agent decision-making process.
+
+Explainability Evaluation
+The confusion matrix presents that the proposed model has been able to uncover performance in terms of classifying between coordinated and non-coordinated agent actions. Most of the actions coordinated are rightly recognized meaning that the framework is effective in learning cooperative strategies among agents. Very few actions which are coordinated are wrongly identified as non-coordinated actions. Equally, the system successfully identifies the non-coordinated behaviors and it is an indication that the model is capable of distinguishing between optimal and suboptimal coordination patterns. These findings support the fact that the suggested framework is highly reliable when it comes to the recognition of coordination outcomes.
+
+Confusion Matrix
+Performance Analysis
+The accuracy graph shows the training accuracy and validation accuracy of the proposed framework with regard to training epochs. The training and validation accuracy increases with the increase in the number of the epochs between 10 and 50 which implies that the model is successfully learning the coordination patterns between the agents. The accuracy of the early stages of training is rather low as the agents are only exploring the environment and discovering the best policies. The hierarchical reinforcement learning mechanism enables the agents to optimize the decision strategies as the training advances to provide them with higher performance. The accuracy of training is 96.4% and the accuracy of validation is 95.7 per cent at the last epoch, which prove the model is generalized to unseen coordination cases. The fact that the training and validation accuracy difference are also small also points to the fact that the model is not overfitted and that its behavior during learning remains stable.
+
+Training and Validation Accuracy
+The loss graph shows how the training and validation loss changed throughout the training process. In the first instance the values of the losses are greater as the model is not yet learned to adopt optimal coordination policies. During the training, training and validation loss keep declining, which means that the model manages to reduce the prediction errors and enhance the accuracy of decisions made by it. The success of lessening the loss can be attributed to the ongoing policy changes and optimalization of rewards in the hierarchical reinforcement learning model. The training and validation loss values drop to 0.14 and 0.17 respectively by epoch 50, indicating the model has been well trained. The same tendency as in the two curves evidences the fact that the learning process is stable and that the model works the same in both training and validation data.
+
+Training and Validation Loss
+The performance of the proposed model is described by using ROC curve, in which the relationship between the true positive rate and the false positive rate is studied at different levels of classification threshold. The true positive rate rises and the false positive also rises slightly as the threshold reduces. The curve increases at an accelerated rate towards the upper-left side of the graph, which means that the offered framework is strong in terms of its classification ability. This act shows that the model is able to rightly establish coordinated actions and reduce false projections. The proposed model has much higher true positive rates at all levels of threshold compared to a random classifier, which follows a diagonal line. The general pattern of the curve shows that the model is highly discriminative thus, large area under the curve. These findings confirm that the suggested framework is effective in distinguishing between coordinated and non-coordinated behavior of agent in the coordination task of an autonomous system. Headings, or heads, are paper structuring tools that are used to guide the reader through your paper. This can be of two varieties; component heads and text heads.
+
+ROC Curve
+The comparison on the baseline shows the benefits of the suggested framework in comparison with traditional techniques. The conventional reinforcement learning models have a lack of coordination ability and transparency in decision making. Multi-agent reinforcement learning increases coordination though it remains a black-box model. Hierarchical reinforcement learning boosts learning rigidity and task segmentation. Nevertheless, the explainable hierarchical reinforcement learning framework is the most efficient in the proposed combination of the efficiency of coordination and interpretable decision-making. By incorporating mechanisms of explainability, users can get to know how agents make decisions, which makes the system more operational in real autonomous systems.
+Baseline Comparison
+Method
+Coordination Efficiency (%)
+Decision Transparency
+Learning Stability
+Traditional RL
+84.5
+Low
+Medium
+MARL
+89.7
+Low
+Medium
+HRL
+92.8
+Medium
+High
+Proposed Explainable MARL-HRL
+96.4
+High
+High
+Discussion
+The findings indicate that the proposed explainable multi-agent hierarchical reinforcement learning model is very effective in enhancing efficiency in coordination among autonomous agents. The hierarchical form facilitates the more effective division of the tasks and the agents are able to make strategic and low level decisions. Performance metrics such as accuracy, precision, recall, and AUC show some better performance in comparison to conventional methods of reinforcement learning. The stability and reliability of the learning steps is also confirmed by the training performance and ROC analysis. Also, the explainability module increases the transparency with interpretable insights into the decisions of the agents, which makes the autonomous systems in real-world more trustworthy and usable.
+Conclusion and future work
+This paper introduced a hierarchically reinforced multi-agent artificial intelligence agent coordination model that can be explained. The framework suggested will combine the principles of multi-agent coordination, hierarchical policy learning, and explainability, so as to enhance the performance of the decision maker as well as the transparency of the systems. Hierarchical reinforcement learning structure allows agents to break down complex coordination problems into a high-level strategic planning and low-level action execution which enhances scalability and efficiency of learning in dynamic settings. It has been shown by experiments that the suggested framework is more accurate, more successful in coordination, and more stable in training than the traditional reinforcement learning and conventional multi-agent learning methods. The evaluation metrics such as accuracy, precision, recall, F1-score, and ROC analysis support the usefulness of the suggested model in recognizing coordinated actions among agents. Moreover, the explainability module helps to gain interpretable information into agent action with action justification, policy visualization, and decision traceability, which increases the trust and usability of real-world implementation. 
+Future efforts will be directed to the extension of the framework to large-scale real-world autonomous systems including intelligent transportation networks and collaborating swarms of robots. This can be enhanced further through incorporating the latest models of deep reinforcement learning, and the development of adaptive communication protocols between agents. More advanced explainability methods can also be investigated in the future to give more insights into the agent behavior and enhance the trustworthiness of autonomous multi-agent systems in potentially risky settings.
+References
+[1]J. Chen, J. Sun, and G. Wang, “From unmanned systems to autonomous intelligent systems,” Engineering, vol. 12, pp. 16–19, 2022.
+[2]S. Manaseswaran, S. Vimal, R. Gowri, P. Karthikeyan, N. Kandavel, and V. Saraswathi, “Swarm Robotics in Search and Rescue Operations: Challenges, Strategies, and Future Directions,” in 2025 10th International Conference on Smart Structures and Systems (ICSSS), IEEE, 2025, pp. 1–6.
+[3]Z. Abbas and M. Rasool, “Unpredictable Intelligence: Exploring Emergent Behaviors in Autonomous Agents Driven by Reinforcement Learning Dynamics,” 2025.
+[4]K. Zhang, Z. Yang, and T. Başar, “Multi-agent reinforcement learning: A selective overview of theories and algorithms,” Handb. Reinf. Learn. Control, pp. 321–384, 2021.
+[5]F. Martinez-Gil, M. Lozano, and F. Fernández, “MARL-Ped: A multi-agent reinforcement learning based framework to simulate pedestrian groups,” Simul. Model. Pract. Theory, vol. 47, pp. 259–275, 2014.
+[6]M. Bohanec, M. Robnik-Šikonja, and M. Kljajić Borštnar, “Decision-making framework with double-loop learning through interpretable black-box machine learning models,” Ind. Manag. Data Syst., vol. 117, no. 7, pp. 1389–1406, 2017.
+[7]A. G. Barto and S. Mahadevan, “Recent advances in hierarchical reinforcement learning,” Discrete Event Dyn. Syst., vol. 13, no. 4, pp. 341–379, 2003.
+[8]Y. Shan, H. Liu, T. Long, and Y. Chang, “RD-HRL: Generating Reliable Sub-Goals for Long-Horizon Sparse-Reward Tasks,” in The Fourteenth International Conference on Learning Representations, 
+[9]Y. Yu, Z. Zhai, W. Li, and J. Ma, “Target-Oriented Multi-Agent Coordination with Hierarchical Reinforcement Learning,” Appl. Sci., vol. 14, no. 16, p. 7084, Aug. 2024, doi: 10.3390/app14167084.
+[10]C. Li, S. Dong, S. Yang, Y. Hu, W. Li, and Y. Gao, “Coordinating Multi-Agent Reinforcement Learning via Dual Collaborative Constraints,” Neural Netw., vol. 182, p. 106858, Feb. 2025, doi: 10.1016/j.neunet.2024.106858.
+[11]X. Mu, H. H. Zhuo, C. Chen, K. Zhang, C. Yu, and J. Hao, “Hierarchical task network-enhanced multi-agent reinforcement learning: Toward efficient cooperative strategies,” Neural Netw., vol. 186, p. 107254, Jun. 2025, doi: 10.1016/j.neunet.2025.107254.
+[12]Z. Li et al., “Coordination as inference in multi-agent reinforcement learning,” Neural Netw., vol. 172, p. 106101, Apr. 2024, doi: 10.1016/j.neunet.2024.106101.
+[13]T. Li, G. Wang, Q. Fu, M. Zhao, and X. Liu, “Hierarchical reinforcement learning with opponent modeling for command and control system,” Complex Intell. Syst., vol. 12, no. 1, p. 20, Jan. 2026, doi: 10.1007/s40747-025-02128-9.
+[14]J.-P. Huang, L. Gao, X.-Y. Li, and C.-J. Zhang, “A cooperative hierarchical deep reinforcement learning based multi-agent method for distributed job shop scheduling problem with random job arrivals,” Comput. Ind. Eng., vol. 185, p. 109650, Nov. 2023, doi: 10.1016/j.cie.2023.109650.
+[15]P. Feng et al., “Hierarchical Consensus-Based Multi-Agent Reinforcement Learning for Multi-Robot Cooperation Tasks,” in 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), Abu Dhabi, United Arab Emirates: IEEE, Oct. 2024, pp. 642–649. doi: 10.1109/IROS58592.2024.10802212.
+
+
+
+
