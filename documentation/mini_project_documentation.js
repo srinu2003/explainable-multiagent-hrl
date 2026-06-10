@@ -9,7 +9,7 @@ const path = require('path');
 // ─── FONT & SIZE CONSTANTS ──────────────────────────────────────────────────
 const F = "Bookman Old Style";
 const SZ = { content: 24, title: 28, chapter: 32 }; // 12pt, 14pt, 16pt (half-points)
-const LS = { line: 276, lineRule: "auto" };         // 1.15 line spacing
+const LS = { line: 360, lineRule: "auto" };         // 1.5 line spacing
 const AP = 180;                                     // after-paragraph spacing
 
 // ─── HELPER BUILDERS ────────────────────────────────────────────────────────
