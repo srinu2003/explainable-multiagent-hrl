@@ -1,0 +1,43 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#E3F2FD', 'primaryTextColor': '#1A237E', 'primaryBorderColor': '#1565C0', 'lineColor': '#1565C0', 'secondaryColor': '#FFF3E0', 'tertiaryColor': '#E8F5E9', 'fontFamily': 'Bookman Old Style, Georgia, serif', 'fontSize': '14px'}}}%%
+flowchart TB
+    subgraph ENV["Search and Rescue Environment"]
+        direction TB
+        G["15x15 Dynamic Grid<br/>Debris | Fire | Charge Stations"]
+        V["Victims<br/>hidden → scanned → rescued"]
+        G --- V
+    end
+
+    subgraph AGENTS["Multi-Agent Team"]
+        direction LR
+        A1["Drone A1<br/>Reconnaissance"]
+        A2["Drone A2<br/>Reconnaissance"]
+        A3["Rover A3<br/>Rescue and Path Clearing"]
+    end
+
+    subgraph HRL["Hierarchical Reinforcement Learning"]
+        direction TB
+        HLP["High-Level Policy<br/>Q-Table | Epsilon-Greedy<br/>Macro-Goal Assignment"]
+        LLP["Low-Level Policy<br/>DQN 64-64 MLP + BFS Pathfinder<br/>Primitive Action Selection"]
+        HLP -->|"Sub-Goal<br/>Coordinates"| LLP
+    end
+
+    subgraph XAI["Explainability Engine"]
+        direction TB
+        HJ["High-Level Justification<br/>Sector assignment rationale"]
+        LJ["Low-Level Justification<br/>Step-by-step spatial reasoning"]
+        SAL["Gradient Saliency<br/>Feature attribution percentages"]
+    end
+
+    subgraph DASH["Live Dashboard"]
+        direction TB
+        HTTP["HTTP Server<br/>REST API + SSE"]
+        HTML["HTML Live Demo<br/>Grid Visualization"]
+        HTTP --- HTML
+    end
+
+    ENV -->|"Observations<br/>pos, battery, mapped_grid"| HRL
+    HRL -->|"Actions<br/>N, S, E, W, Interact"| ENV
+    AGENTS <-->|"Agent State"| ENV
+    HRL -->|"Decisions + State"| XAI
+    XAI -->|"Explanations + Saliency"| DASH
+    ENV -->|"Grid State + Rewards"| DASH

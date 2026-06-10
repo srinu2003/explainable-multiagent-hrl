@@ -1,0 +1,47 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#E3F2FD', 'primaryTextColor': '#1A237E', 'primaryBorderColor': '#1565C0', 'lineColor': '#1565C0', 'secondaryColor': '#FFF3E0', 'tertiaryColor': '#E8F5E9', 'fontFamily': 'Bookman Old Style, Georgia, serif', 'fontSize': '14px'}}}%%
+flowchart TB
+    OBS["Agent Observation<br/>Position, Battery, Mapped Grid,<br/>Scanned Victims, Debris, Fires"]
+
+    subgraph HLP["HIGH-LEVEL POLICY — Q-Table"]
+        direction TB
+        DS["Discretize State<br/>battery_low, unexplored, overlap"]
+        QT["Q-Table Lookup<br/>Epsilon-Greedy Selection"]
+        MG["Macro-Goal Output"]
+        DS --> QT --> MG
+    end
+
+    subgraph GOALS["Macro-Goal Space"]
+        direction LR
+        Q0["NW Quadrant<br/>3,3"]
+        Q1["NE Quadrant<br/>3,11"]
+        Q2["SW Quadrant<br/>11,3"]
+        Q3["SE Quadrant<br/>11,11"]
+        Q4["Charge Pad"]
+        Q5["Closest Victim<br/>Rover Only"]
+        Q6["Closest Debris<br/>Rover Only"]
+    end
+
+    subgraph LLP["LOW-LEVEL POLICY — DQN + BFS"]
+        direction TB
+        FE["Feature Extraction<br/>12-D Vector: dx, dy, battery, 3x3 FOV"]
+        BFS["BFS Pathfinder<br/>Obstacle-Aware Routing"]
+        DQN["DQN Network<br/>Linear 12→64→64→5"]
+        ACT["Primitive Action<br/>N | S | E | W | Interact"]
+        FE --> BFS
+        FE --> DQN
+        BFS --> ACT
+        DQN -.->|"Fallback"| ACT
+    end
+
+    OBS --> HLP
+    MG --> GOALS
+    GOALS --> LLP
+    OBS --> LLP
+
+    subgraph UPD["SMDP Update"]
+        direction LR
+        BU["Bellman Q-Update<br/>High-Level"]
+        TDL["TD Loss + Backprop<br/>Low-Level"]
+    end
+
+    ACT -->|"Accumulated<br/>Reward"| UPD

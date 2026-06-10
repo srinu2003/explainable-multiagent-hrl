@@ -1,2 +1,8 @@
 # Word internal document
 ~$*.docx
+unpacked/
+
+# Python
+**/__pycache__/
+**/.venv/
+**/venv/

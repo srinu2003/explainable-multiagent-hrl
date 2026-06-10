@@ -1,0 +1,53 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#E3F2FD', 'primaryTextColor': '#1A237E', 'primaryBorderColor': '#1565C0', 'lineColor': '#1565C0', 'secondaryColor': '#FFF3E0', 'tertiaryColor': '#E8F5E9', 'fontFamily': 'Bookman Old Style, Georgia, serif', 'fontSize': '14px'}}}%%
+stateDiagram-v2
+    [*] --> GridInit : "env.reset"
+
+    state GridInit {
+        [*] --> ClearGrid : "Clear 15x15 grid"
+        ClearGrid --> PlaceCS : "Place 2 Charge Stations"
+        PlaceCS --> SpawnDebris : "Spawn 10 debris obstacles"
+        SpawnDebris --> SpawnFire : "Spawn 2 fire seeds"
+        SpawnFire --> SpawnVictims : "Spawn 3 hidden victims"
+        SpawnVictims --> DeployAgents : "Deploy A1, A2, A3"
+        DeployAgents --> [*]
+    }
+
+    GridInit --> Simulation : "Observations returned"
+
+    state Simulation {
+        [*] --> AgentActions
+        AgentActions --> ProcessMove : "Move N/S/E/W"
+        AgentActions --> ProcessInteract : "Interact"
+        ProcessMove --> CheckCollision
+        CheckCollision --> UpdatePosition : "Safe cell"
+        CheckCollision --> AgentDestroyed : "Fire collision"
+        ProcessInteract --> Recharge : "On Charge Station"
+        ProcessInteract --> ClearDebris : "Adjacent Debris"
+        ProcessInteract --> RescueVictim : "On Scanned Victim"
+        UpdatePosition --> UpdateMapping
+        Recharge --> UpdateMapping
+        ClearDebris --> UpdateMapping
+        RescueVictim --> UpdateMapping
+        UpdateMapping --> FireSpread : "Every 7 steps"
+        FireSpread --> CheckTerminal
+    }
+
+    state CheckTerminal {
+        [*] --> AllRescued : "All victims rescued"
+        [*] --> AllDead : "All agents inactive"
+        [*] --> MaxSteps : "step_count >= 150"
+        [*] --> Continue : "Otherwise"
+    }
+
+    AllRescued --> EpisodeSuccess
+    AllDead --> EpisodeFailure
+    MaxSteps --> EpisodeFailure
+    Continue --> Simulation
+
+    state VictimLifecycle {
+        VictimHidden --> VictimScanned : "Drone FOV detects"
+        VictimScanned --> VictimRescued : "Rover reaches and interacts"
+    }
+
+    EpisodeSuccess --> [*]
+    EpisodeFailure --> [*]

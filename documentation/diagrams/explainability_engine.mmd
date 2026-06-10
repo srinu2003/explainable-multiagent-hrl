@@ -1,0 +1,57 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#E3F2FD', 'primaryTextColor': '#1A237E', 'primaryBorderColor': '#1565C0', 'lineColor': '#1565C0', 'secondaryColor': '#FFF3E0', 'tertiaryColor': '#E8F5E9', 'fontFamily': 'Bookman Old Style, Georgia, serif', 'fontSize': '14px'}}}%%
+flowchart TB
+    subgraph INPUT["Decision Context"]
+        direction LR
+        AG["Agent ID and Role"]
+        POS["Current Position"]
+        SG["Sub-Goal Coordinates"]
+        ACT["Selected Action"]
+        OALL["All Agent States"]
+    end
+
+    subgraph HL_XAI["High-Level Justification"]
+        direction TB
+        QN["Quadrant Name Mapping<br/>NW, NE, SW, SE"]
+        PC["Peer Coordination Check<br/>Other agents heading to..."]
+        BAT["Battery Status Report"]
+        HL_OUT["Textual Explanation<br/>Reason: Prioritizing exploration of NE sector<br/>Coordinating with Drone 2 heading to SW"]
+        QN --> HL_OUT
+        PC --> HL_OUT
+        BAT --> HL_OUT
+    end
+
+    subgraph LL_XAI["Low-Level Justification"]
+        direction TB
+        DC["Distance Change Analysis<br/>reducing vs increasing distance"]
+        HC["Hazard Check<br/>Fire and Debris neighbors"]
+        IC["Interaction Check<br/>Charge, Clear Debris, Rescue"]
+        LL_OUT["Spatial Explanation<br/>Drone A1 selected Move EAST,<br/>reducing horizontal distance to sub-goal<br/>avoiding Fire detected in NORTH"]
+        DC --> LL_OUT
+        HC --> LL_OUT
+        IC --> LL_OUT
+    end
+
+    subgraph SALIENCY["Gradient Saliency Computation"]
+        direction TB
+        SV["State Vector<br/>12-D Input with requires_grad"]
+        FWD["Forward Pass<br/>DQN Policy Network"]
+        BWD["Backward Pass<br/>Gradient of Q-max w.r.t. input"]
+        GRP["Group Absolute Gradients<br/>Target Proximity: dx, dy<br/>Battery Status: battery<br/>Hazard Avoidance: 3x3 FOV"]
+        PCT["Percentage Attribution<br/>Target: 60% | Battery: 10% | Hazards: 30%"]
+        SV --> FWD --> BWD --> GRP --> PCT
+    end
+
+    INPUT --> HL_XAI
+    INPUT --> LL_XAI
+    INPUT --> SALIENCY
+
+    subgraph OUTPUT["Dashboard Output"]
+        direction LR
+        HLOG["High-Level Log Panel"]
+        LLOG["Low-Level Log Panel"]
+        SBAR["Saliency Bar Chart"]
+    end
+
+    HL_OUT --> HLOG
+    LL_OUT --> LLOG
+    PCT --> SBAR

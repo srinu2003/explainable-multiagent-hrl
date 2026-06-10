@@ -1,0 +1,42 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#E3F2FD', 'primaryTextColor': '#1A237E', 'primaryBorderColor': '#1565C0', 'lineColor': '#1565C0', 'secondaryColor': '#FFF3E0', 'tertiaryColor': '#E8F5E9', 'fontFamily': 'Bookman Old Style, Georgia, serif', 'fontSize': '14px'}}}%%
+flowchart TB
+    START(["Start Training<br/>num_episodes = 50"])
+    RESET["env.reset<br/>Initialize Grid, Agents, Victims"]
+    
+    subgraph EPISODE["Episode Loop"]
+        direction TB
+        EPS["Epsilon Decay<br/>HL: 0.15 × 0.95^ep/10<br/>LL: 0.15 × 0.95^ep/10"]
+        
+        subgraph STEP["Step Loop"]
+            direction TB
+            CHK{"Agent has<br/>sub_goal?"}
+            HL_SEL["High-Level: select_macro_goal<br/>Q-table epsilon-greedy"]
+            HL_UPD["SMDP Q-Update<br/>Accumulated reward from<br/>previous option"]
+            LL_SEL["Low-Level: select_action<br/>BFS pathfinder + DQN fallback"]
+            ENV_STEP["env.step<br/>Execute actions, update grid"]
+            STORE["Store LL transition<br/>Experience replay buffer"]
+            TRAIN["ll_agent.train_step<br/>Mini-batch gradient descent"]
+            DONE{"Episode<br/>Done?"}
+            
+            CHK -->|"No"| HL_UPD --> HL_SEL
+            CHK -->|"Yes"| LL_SEL
+            HL_SEL --> LL_SEL
+            LL_SEL --> ENV_STEP --> STORE --> TRAIN --> DONE
+        end
+        
+        EPS --> CHK
+    end
+    
+    TGT{"ep % 5<br/>== 0?"}
+    TGT_UPD["Update Target Networks<br/>Copy policy → target"]
+    METRICS["Log Metrics<br/>Success Rate, Avg Reward, Loss"]
+    SAVE["Save Weights<br/>weights_high.pkl<br/>weights_low_drone.pth<br/>weights_low_rover.pth"]
+    ENDNODE(["Training Complete"])
+
+    START --> RESET --> EPISODE
+    DONE -->|"No"| CHK
+    DONE -->|"Yes"| TGT
+    TGT -->|"Yes"| TGT_UPD --> METRICS
+    TGT -->|"No"| METRICS
+    METRICS -->|"More episodes"| RESET
+    METRICS -->|"All done"| SAVE --> ENDNODE

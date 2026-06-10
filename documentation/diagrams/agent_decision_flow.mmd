@@ -1,0 +1,47 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#E3F2FD', 'primaryTextColor': '#1A237E', 'primaryBorderColor': '#1565C0', 'lineColor': '#1565C0', 'secondaryColor': '#FFF3E0', 'tertiaryColor': '#E8F5E9', 'fontFamily': 'Bookman Old Style, Georgia, serif', 'fontSize': '14px'}}}%%
+flowchart TB
+    START(["Agent Turn Begins"])
+    
+    ACTIVE{"Agent<br/>Active?"}
+    ACTIVE -->|"No<br/>battery=0 or destroyed"| SKIP(["Skip Agent"])
+    
+    ACTIVE -->|"Yes"| HAS_GOAL{"Has<br/>Sub-Goal?"}
+    
+    HAS_GOAL -->|"No"| HL_DECIDE
+    
+    subgraph HL_DECIDE["High-Level Decision"]
+        direction TB
+        STATE_HL["Discretize State<br/>battery_low, unexplored, overlap"]
+        QTABLE["Q-Table Lookup"]
+        EGREEDY{"Random < epsilon?"}
+        RANDOM_HL["Random Action"]
+        GREEDY_HL["Argmax Q-values"]
+        TRANSLATE["Translate to Coordinates<br/>Quadrant center or<br/>Nearest charge pad or<br/>Closest victim/debris"]
+        
+        STATE_HL --> QTABLE --> EGREEDY
+        EGREEDY -->|"Yes"| RANDOM_HL --> TRANSLATE
+        EGREEDY -->|"No"| GREEDY_HL --> TRANSLATE
+    end
+    
+    HL_DECIDE -->|"sub_goal assigned"| LL_DECIDE
+    HAS_GOAL -->|"Yes"| LL_DECIDE
+    
+    subgraph LL_DECIDE["Low-Level Decision"]
+        direction TB
+        AT_GOAL{"At<br/>Sub-Goal?"}
+        AT_GOAL -->|"Yes"| INTERACT_ACT["Action: Interact<br/>Clear sub_goal"]
+        AT_GOAL -->|"No"| NEEDS_CHARGE{"On Charge Station<br/>and Battery Low?"}
+        NEEDS_CHARGE -->|"Yes"| CHARGE_ACT["Action: Interact<br/>Recharge"]
+        NEEDS_CHARGE -->|"No"| ON_VICTIM{"On Scanned<br/>Victim?"}
+        ON_VICTIM -->|"Yes, Rover"| RESCUE_ACT["Action: Interact<br/>Rescue Victim"]
+        ON_VICTIM -->|"No"| BFS_PATH["BFS Pathfinder<br/>Find shortest safe path"]
+        BFS_PATH --> PATH_FOUND{"Path<br/>Found?"}
+        PATH_FOUND -->|"Yes"| NEXT_STEP["Move toward next step<br/>N, S, E, or W"]
+        PATH_FOUND -->|"No"| FALLBACK["Random safe move<br/>Avoid fire and debris"]
+    end
+    
+    LL_DECIDE --> EXECUTE["Execute Action in Environment"]
+    EXECUTE --> XAI_LOG["Generate XAI Explanations<br/>Justify HL + LL decisions<br/>Compute Saliency"]
+    XAI_LOG --> ENDTURN(["Agent Turn Ends"])
+    
+    START --> ACTIVE
