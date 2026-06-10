@@ -2,7 +2,7 @@ const {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
   AlignmentType, LevelFormat, BorderStyle, WidthType, ShadingType, PageBreak,
   TabStopType, TabStopPosition, HeadingLevel, Bookmark: DocxBookmark, PageReference, InternalHyperlink,
-  BookmarkStart, BookmarkEnd
+  BookmarkStart, BookmarkEnd, Footer, PageNumber, NumberFormat
 } = require('docx');
 const fs = require('fs');
 const path = require('path');
@@ -528,8 +528,7 @@ const preliminary = [
       new TableRow({ children: [tcC("TD", false, 2200), tc("Temporal Difference", false, CW - 2200)] }),
       new TableRow({ children: [tcC("CTDE", false, 2200), tc("Centralized Training with Decentralized Execution", false, CW - 2200)] }),
     ]
-  }),
-  pb(),
+  })
 ];
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1258,23 +1257,80 @@ const refs = [
 // ════════════════════════════════════════════════════════════════════════════
 //  ASSEMBLE DOCUMENT
 // ════════════════════════════════════════════════════════════════════════════
-const allChildren = [
-  ...preliminary,
-  ...ch1,
-  ...ch2,
-  ...ch3,
-  ...ch4,
-  ...ch5,
-  ...refs,
-];
-
 const doc = new Document({
   numbering,
   styles,
-  sections: [{
-    properties: pageProps,
-    children: allChildren,
-  }]
+  sections: [
+    {
+      properties: {
+        page: {
+          ...pageProps.page,
+          pageNumbers: {
+            start: 1,
+            formatType: NumberFormat.LOWER_ROMAN,
+          }
+        },
+        differentFirstPageHeaderFooter: true,
+      },
+      footers: {
+        default: new Footer({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  children: [PageNumber.CURRENT],
+                  font: F,
+                  size: SZ.content,
+                })
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 100, after: 100 }
+            })
+          ]
+        }),
+        first: new Footer({
+          children: []
+        })
+      },
+      children: preliminary,
+    },
+    {
+      properties: {
+        page: {
+          ...pageProps.page,
+          pageNumbers: {
+            start: 1,
+            formatType: NumberFormat.DECIMAL,
+          }
+        }
+      },
+      footers: {
+        default: new Footer({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  children: [PageNumber.CURRENT],
+                  font: F,
+                  size: SZ.content,
+                })
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 100, after: 100 }
+            })
+          ]
+        })
+      },
+      children: [
+        ...ch1,
+        ...ch2,
+        ...ch3,
+        ...ch4,
+        ...ch5,
+        ...refs,
+      ]
+    }
+  ]
 });
 
 Packer.toBuffer(doc).then(buf => {
@@ -1287,8 +1343,9 @@ Packer.toBuffer(doc).then(buf => {
   let written = false;
   for (const name of filenames) {
     try {
-      fs.writeFileSync(name, buf);
-      console.log(`SUCCESS: Written to ${name}`);
+      const outPath = path.join(__dirname, name);
+      fs.writeFileSync(outPath, buf);
+      console.log(`SUCCESS: Written to ${outPath}`);
       written = true;
       break;
     } catch (e) {
