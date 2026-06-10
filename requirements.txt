@@ -1,7 +1,3 @@
 # requirements.txt
 torch
-gymnasium
 numpy
-matplotlib
-seaborn
-tensorboard

@@ -112,6 +112,12 @@ class ExplainabilityEngine:
         state_var = state_vec.clone().detach().requires_grad_(True)
         
         policy_net = low_level_agent.get_policy_net(agent_id)
+        
+        # Save training state and switch to evaluation mode
+        training_mode = policy_net.training
+        policy_net.eval()
+        policy_net.zero_grad()
+        
         q_values = policy_net(state_var.unsqueeze(0))
         
         # Find index of best action
@@ -122,6 +128,13 @@ class ExplainabilityEngine:
         
         gradients = state_var.grad.cpu().numpy()
         abs_grads = np.abs(gradients)
+        
+        # Zero out the policy network gradients so they don't interfere with optimizer updates
+        policy_net.zero_grad()
+        
+        # Restore training state
+        if training_mode:
+            policy_net.train()
         
         # Group features:
         # 1. Proximity to sub-goal: dx, dy (indices 0, 1)

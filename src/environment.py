@@ -138,10 +138,6 @@ class SearchRescueEnv:
             action = actions.get(agent_id, 4)  # Default is Interact
             curr_pos = list(agent["pos"])
             
-            # Sub-goal check (if agent reached its target, clear sub-goal)
-            if agent["sub_goal"] and agent["pos"] == agent["sub_goal"]:
-                agent["sub_goal"] = None
-                
             # Deplete battery
             battery_cost = 1
             
@@ -181,43 +177,74 @@ class SearchRescueEnv:
                 # Interact
                 # a) Recharge
                 if tuple(agent["pos"]) in self.charge_stations:
-                    agent["battery"] = 100
-                    battery_cost = 0  # No cost to charge
-                    rewards[agent_id] += 5.0
-                    info["xai_logs"][agent_id] = f"Recharged battery to 100%."
+                    if agent["battery"] < 95:
+                        agent["battery"] = 100
+                        battery_cost = 0  # No cost to charge
+                        rewards[agent_id] += 5.0
+                        info["xai_logs"][agent_id] = f"Recharged battery to 100%."
+                    else:
+                        battery_cost = 1  # Wasting a step costs normal battery/time
+                        rewards[agent_id] -= 1.0  # Time wasting penalty
+                        info["xai_logs"][agent_id] = f"Wasted step on charging station with full battery."
                 
                 # b) Clear debris (Rover only)
                 elif agent["role"] == "Rescue":
-                    # Check for adjacent debris
-                    cleared = False
-                    for idx, d_pos in enumerate(self.debris_locations):
-                        dist = abs(d_pos[0] - agent["pos"][0]) + abs(d_pos[1] - agent["pos"][1])
-                        if dist <= 1:  # Adjacent or on debris
-                            self.debris_locations.pop(idx)
-                            self.grid[d_pos] = 0  # Clear cell
-                            battery_cost = 4  # Heavy battery cost to clear path
-                            rewards[agent_id] += 12.0
-                            rewards["A1"] += 4.0  # Shared reward for clearing path
-                            rewards["A2"] += 4.0
-                            info["xai_logs"][agent_id] = f"Cleared debris at {d_pos}."
-                            cleared = True
-                            break
+                    # Priority 1: Rescue Victim (Rover only)
+                    rescued = False
+                    for vic_id, vic in self.victims.items():
+                        if vic["status"] == "scanned" and vic["pos"] == agent["pos"]:
+                            # Check if the victim is adjacent to any fire cell (high-risk rescue)
+                            is_high_risk = False
+                            for f_pos in self.fire_locations:
+                                if abs(f_pos[0] - vic["pos"][0]) + abs(f_pos[1] - vic["pos"][1]) <= 1:
+                                    is_high_risk = True
+                                    break
                             
-                    if not cleared:
-                        # c) Rescue Victim (Rover only)
-                        rescued = False
-                        for vic_id, vic in self.victims.items():
-                            if vic["status"] == "scanned" and vic["pos"] == agent["pos"]:
-                                vic["status"] = "rescued"
-                                agent["score"] += 1
+                            vic["status"] = "rescued"
+                            agent["score"] += 1
+                            
+                            if is_high_risk:
+                                rewards[agent_id] += 60.0  # 40.0 base + 20.0 high-risk bonus
+                                rewards["A1"] += 20.0      # 15.0 base + 5.0 high-risk bonus
+                                rewards["A2"] += 20.0
+                                info["xai_logs"][agent_id] = f"Rescued High-Risk Victim {vic_id} near fire at {vic['pos']}!"
+                            else:
                                 rewards[agent_id] += 40.0
-                                rewards["A1"] += 15.0  # Shared reward for saving lives
+                                rewards["A1"] += 15.0
                                 rewards["A2"] += 15.0
                                 info["xai_logs"][agent_id] = f"Rescued Victim {vic_id} at {vic['pos']}!"
-                                rescued = True
+                                
+                            rescued = True
+                            break
+                            
+                    if not rescued:
+                        # Priority 2: Clear debris (Rover only)
+                        cleared = False
+                        for idx, d_pos in enumerate(self.debris_locations):
+                            dist = abs(d_pos[0] - agent["pos"][0]) + abs(d_pos[1] - agent["pos"][1])
+                            if dist <= 1:  # Adjacent or on debris
+                                self.debris_locations.pop(idx)
+                                self.grid[d_pos] = 0  # Clear cell
+                                battery_cost = 4  # Heavy battery cost to clear path
+                                rewards[agent_id] += 12.0
+                                rewards["A1"] += 4.0  # Shared reward for clearing path
+                                rewards["A2"] += 4.0
+                                info["xai_logs"][agent_id] = f"Cleared debris at {d_pos}."
+                                cleared = True
                                 break
-                        if not rescued:
+                                
+                        if not cleared:
                             rewards[agent_id] -= 0.5  # Idle penalty
+                            
+            # c) Fire proximity penalty
+            if agent["active"]:
+                is_near_fire = False
+                for f_pos in self.fire_locations:
+                    if abs(f_pos[0] - agent["pos"][0]) + abs(f_pos[1] - agent["pos"][1]) <= 1:
+                        is_near_fire = True
+                        break
+                if is_near_fire:
+                    rewards[agent_id] -= 1.0  # safety penalty for proximity to fire
                             
             # Update battery depletion
             agent["battery"] = max(0, agent["battery"] - battery_cost)
@@ -225,6 +252,10 @@ class SearchRescueEnv:
                 agent["active"] = False
                 rewards[agent_id] -= 20.0
                 info["xai_logs"][agent_id] = f"Ran out of battery at {agent['pos']}."
+                
+            # Sub-goal check (if agent reached its target, clear sub-goal at the end of the step)
+            if agent["active"] and agent["sub_goal"] and agent["pos"] == agent["sub_goal"]:
+                agent["sub_goal"] = None
                 
         # 2. Update mapping
         self.update_mapping()
@@ -240,10 +271,10 @@ class SearchRescueEnv:
                         self.grid[neighbor] == 0 and
                         neighbor not in self.charge_stations):
                         
-                        # Check agents aren't occupying it
+                        # Check agents aren't occupying it (active only)
                         agent_on = False
                         for ag in self.agents.values():
-                            if ag["pos"] == list(neighbor):
+                            if ag["active"] and ag["pos"] == list(neighbor):
                                 agent_on = True
                         if not agent_on and random.random() < 0.18: # 18% spread probability
                             new_fires.append(neighbor)
