@@ -2,7 +2,8 @@ const {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
   AlignmentType, LevelFormat, BorderStyle, WidthType, ShadingType, PageBreak,
   TabStopType, TabStopPosition, HeadingLevel, Bookmark: DocxBookmark, PageReference, InternalHyperlink,
-  BookmarkStart, BookmarkEnd, Footer, PageNumber, NumberFormat
+  BookmarkStart, BookmarkEnd, Footer, PageNumber, NumberFormat,
+  Math: DocxMath, MathRun, MathFraction, MathSubScript, MathSuperScript, MathSubSuperScript, MathSum
 } = require('docx');
 const fs = require('fs');
 const path = require('path');
@@ -149,18 +150,22 @@ const bdr = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
 const bdrs = { top: bdr, bottom: bdr, left: bdr, right: bdr };
 const margs = { top: 80, bottom: 80, left: 120, right: 120 };
 
-const tc = (text, isHdr, w, align) => new TableCell({
-  borders: bdrs,
-  width: { size: w, type: WidthType.DXA },
-  margins: margs,
-  shading: isHdr ? { fill: "CCCCCC", type: ShadingType.CLEAR } : undefined,
-  children: [new Paragraph({
-    children: [new TextRun({ text, font: F, size: SZ.content, bold: isHdr })],
+const tc = (text, isHdr, w, align, fontSize = SZ.content) => {
+  const textArray = Array.isArray(text) ? text : [text];
+  const paragraphs = textArray.map(t => new Paragraph({
+    children: [new TextRun({ text: t, font: F, size: fontSize, bold: isHdr })],
     alignment: align || (isHdr ? AlignmentType.CENTER : AlignmentType.LEFT),
     spacing: { after: 0 },
-  })],
-});
-const tcC = (text, isHdr, w) => tc(text, isHdr, w, AlignmentType.CENTER);
+  }));
+  return new TableCell({
+    borders: bdrs,
+    width: { size: w, type: WidthType.DXA },
+    margins: margs,
+    shading: isHdr ? { fill: "CCCCCC", type: ShadingType.CLEAR } : undefined,
+    children: paragraphs,
+  });
+};
+const tcC = (text, isHdr, w, fontSize = SZ.content) => tc(text, isHdr, w, AlignmentType.CENTER, fontSize);
 
 const tcTextRef = (text, bookmarkId, isHdr, w) => new TableCell({
   borders: bdrs,
@@ -203,11 +208,25 @@ function loadDiagram(filename, widthPx, heightPx, title, figNum) {
   const children = [];
   const bookmarkId = "fig_" + figNum.replace(".", "_");
   if (fs.existsSync(filePath)) {
+    const data = fs.readFileSync(filePath);
+    // Read original PNG dimensions from the IHDR chunk
+    const origWidth = data.readInt32BE(16);
+    const origHeight = data.readInt32BE(20);
+
+    // Define maximum bounding box constraints for A4 printable margins
+    const maxWidth = 500;
+    const maxHeight = origHeight > 1200 ? 650 : 500;
+
+    // Proportional scaling factor calculation to fit within bounding box
+    const scaleFactor = Math.min(maxWidth / origWidth, maxHeight / origHeight, 1);
+    const targetWidth = origWidth * scaleFactor;
+    const targetHeight = origHeight * scaleFactor;
+
     children.push(new Paragraph({
       children: [new ImageRun({
         type: "png",
-        data: fs.readFileSync(filePath),
-        transformation: { width: widthPx, height: heightPx },
+        data: data,
+        transformation: { width: targetWidth, height: targetHeight },
         altText: { title: title, description: title, name: filename },
       })],
       spacing: { before: 200, after: 120 },
@@ -230,6 +249,22 @@ function loadDiagram(filename, widthPx, heightPx, title, figNum) {
   }));
   return children;
 }
+
+// ─── DATA TABLE CELL HELPERS (10pt size = 20) ──────────────────────────────
+const tdc = (text, isHdr, w, align) => tc(text, isHdr, w, align, 20);
+const tdcC = (text, isHdr, w) => tcC(text, isHdr, w, 20);
+
+// ─── MATH ATTRIBUTE HELPERS ────────────────────────────────────────────────
+const mVar = (text) => new TextRun({ text, font: F, size: SZ.content, italics: true });
+const mSub = (text) => new TextRun({ text, font: F, size: SZ.content, subScript: true });
+const mSubVar = (text) => new TextRun({ text, font: F, size: SZ.content, italics: true, subScript: true });
+const mSuper = (text) => new TextRun({ text, font: F, size: SZ.content, superScript: true });
+const mText = (text) => new TextRun({ text, font: F, size: SZ.content });
+const cpFormula = (mathElement) => new Paragraph({
+  children: [mathElement],
+  alignment: AlignmentType.CENTER,
+  spacing: { before: 180, after: 180, ...LS },
+});
 
 // ─── NUMBERING CONFIG ───────────────────────────────────────────────────────
 const numbering = {
@@ -311,9 +346,9 @@ const preliminary = [
   ctr("A Mini Project Report Submitted in Partial Fulfillment of the Requirements", { size: 24, after: 80 }),
   ctr("for the Award of the Degree of", { size: 24, after: 80 }),
   ctr("Master of Technology", { size: 26, bold: true, after: 600 }),
-  ctr("EXPLAINABLE MULTI-AGENT HIERARCHICAL REINFORCEMENT", { size: 28, bold: true, after: 80 }),
-  ctr("LEARNING FOR COOPERATIVE SEARCH AND RESCUE", { size: 28, bold: true, after: 80 }),
-  ctr("IN DYNAMIC GRIDS", { size: 28, bold: true, after: 600 }),
+  ctr("HIERARCHICAL REINFORCEMENT LEARNING AND EXPLAINABLE AL", { size: 28, bold: true, after: 80 }),
+  ctr("FOR MULTI - AGENT AUTONOMOUS", { size: 28, bold: true, after: 80 }),
+  ctr("DECISION SYSTEMS", { size: 28, bold: true, after: 600 }),
   ctr("Submitted by", { size: 24, after: 80 }),
   ctr("SRINIVAS RAO TAMMIREDDY", { size: 26, bold: true, after: 80 }),
   ctr("Roll No: 23R21A0501", { size: 24, after: 500 }),
@@ -779,25 +814,25 @@ const ch2 = [
     rows: [
       new TableRow({
         children: [
-          tc("Method", true, Math.floor(CW * 0.22)),
-          tcC("Multi-Agent", true, Math.floor(CW * 0.13)),
-          tcC("Hierarchical", true, Math.floor(CW * 0.13)),
-          tcC("Explainable", true, Math.floor(CW * 0.13)),
-          tcC("Dynamic Env", true, Math.floor(CW * 0.13)),
-          tcC("Heterogeneous", true, Math.floor(CW * 0.13)),
-          tcC("Real-Time", true, Math.floor(CW * 0.13)),
+          tdc("Method", true, Math.floor(CW * 0.22)),
+          tdcC(["Multi-", "Agent"], true, Math.floor(CW * 0.13)),
+          tdcC(["Hierar-", "chical"], true, Math.floor(CW * 0.13)),
+          tdcC(["Explain-", "able"], true, Math.floor(CW * 0.13)),
+          tdcC(["Dynamic", "Env"], true, Math.floor(CW * 0.13)),
+          tdcC(["Hetero-", "geneous"], true, Math.floor(CW * 0.13)),
+          tdcC(["Real-", "Time"], true, Math.floor(CW * 0.13)),
         ]
       }),
-      new TableRow({ children: [tc("Zhang et al. (MARL Survey)", false, Math.floor(CW * 0.22)), tcC("Yes", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Varies", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13))] }),
-      new TableRow({ children: [tc("Yu et al. (Target-HRL)", false, Math.floor(CW * 0.22)), tcC("Yes", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13))] }),
-      new TableRow({ children: [tc("Feng et al. (Consensus-HRL)", false, Math.floor(CW * 0.22)), tcC("Yes", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13))] }),
-      new TableRow({ children: [tc("Sutton et al. (Options)", false, Math.floor(CW * 0.22)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13))] }),
-      new TableRow({ children: [tc("SHAP / Lundberg & Lee", false, Math.floor(CW * 0.22)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13))] }),
-      new TableRow({ children: [tc("DQN / Mnih et al.", false, Math.floor(CW * 0.22)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Partial", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13))] }),
-      new TableRow({ children: [tc("QMIX / Rashid et al.", false, Math.floor(CW * 0.22)), tcC("Yes", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13))] }),
-      new TableRow({ children: [tc("MADDPG / Lowe et al.", false, Math.floor(CW * 0.22)), tcC("Yes", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13))] }),
-      new TableRow({ children: [tc("XAI Survey / Adadi & Berrada", false, Math.floor(CW * 0.22)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Yes", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("No", false, Math.floor(CW * 0.13)), tcC("Varies", false, Math.floor(CW * 0.13))] }),
-      new TableRow({ children: [tc("EMARL-SAR (Proposed)", true, Math.floor(CW * 0.22)), tcC("Yes", true, Math.floor(CW * 0.13)), tcC("Yes", true, Math.floor(CW * 0.13)), tcC("Yes", true, Math.floor(CW * 0.13)), tcC("Yes", true, Math.floor(CW * 0.13)), tcC("Yes", true, Math.floor(CW * 0.13)), tcC("Yes", true, Math.floor(CW * 0.13))] }),
+      new TableRow({ children: [tdc("Zhang et al. (MARL Survey)", false, Math.floor(CW * 0.22)), tdcC("Yes", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Varies", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13))] }),
+      new TableRow({ children: [tdc("Yu et al. (Target-HRL)", false, Math.floor(CW * 0.22)), tdcC("Yes", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13))] }),
+      new TableRow({ children: [tdc("Feng et al. (Consensus-HRL)", false, Math.floor(CW * 0.22)), tdcC("Yes", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13))] }),
+      new TableRow({ children: [tdc("Sutton et al. (Options)", false, Math.floor(CW * 0.22)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13))] }),
+      new TableRow({ children: [tdc("SHAP / Lundberg & Lee", false, Math.floor(CW * 0.22)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13))] }),
+      new TableRow({ children: [tdc("DQN / Mnih et al.", false, Math.floor(CW * 0.22)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Partial", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13))] }),
+      new TableRow({ children: [tdc("QMIX / Rashid et al.", false, Math.floor(CW * 0.22)), tdcC("Yes", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13))] }),
+      new TableRow({ children: [tdc("MADDPG / Lowe et al.", false, Math.floor(CW * 0.22)), tdcC("Yes", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13))] }),
+      new TableRow({ children: [tdc("XAI Survey / Adadi & Berrada", false, Math.floor(CW * 0.22)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Yes", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("No", false, Math.floor(CW * 0.13)), tdcC("Varies", false, Math.floor(CW * 0.13))] }),
+      new TableRow({ children: [tdc("EMARL-SAR (Proposed)", true, Math.floor(CW * 0.22)), tdcC("Yes", true, Math.floor(CW * 0.13)), tdcC("Yes", true, Math.floor(CW * 0.13)), tdcC("Yes", true, Math.floor(CW * 0.13)), tdcC("Yes", true, Math.floor(CW * 0.13)), tdcC("Yes", true, Math.floor(CW * 0.13)), tdcC("Yes", true, Math.floor(CW * 0.13))] }),
     ]
   }),
   el(),
@@ -940,12 +975,69 @@ const ch3 = [
 
   subHd("3.7.2 High-Level Q-Table Update (SMDP Bellman Equation)"),
   cpCite("The Q-table high-level policy is updated using the SMDP Bellman equation for options. When option o (macro-goal) initiated at state s terminates at state s' after k primitive action steps, the update is:", [4, 6]),
-  cpBold("      Q_H(s, o) ← Q_H(s, o) + α · [R_accumulated + γ_H · max_o' Q_H(s', o') - Q_H(s, o)]"),
+  cpFormula(new DocxMath({
+    children: [
+      new MathSubScript({
+        children: [new MathRun("Q")],
+        subScript: [new MathRun("H")]
+      }),
+      new MathRun("(s, o) ← "),
+      new MathSubScript({
+        children: [new MathRun("Q")],
+        subScript: [new MathRun("H")]
+      }),
+      new MathRun("(s, o) + α · ["),
+      new MathSubScript({
+        children: [new MathRun("R")],
+        subScript: [new MathRun("accumulated")]
+      }),
+      new MathRun(" + "),
+      new MathSubSuperScript({
+        children: [new MathRun("γ")],
+        subScript: [new MathRun("H")],
+        superScript: [new MathRun("τ")]
+      }),
+      new MathRun(" · "),
+      new MathSubScript({
+        children: [new MathRun("max")],
+        subScript: [new MathRun("o'")]
+      }),
+      new MathRun(" "),
+      new MathSubScript({
+        children: [new MathRun("Q")],
+        subScript: [new MathRun("H")]
+      }),
+      new MathRun("(s', o') - "),
+      new MathSubScript({
+        children: [new MathRun("Q")],
+        subScript: [new MathRun("H")]
+      }),
+      new MathRun("(s, o)]")
+    ]
+  })),
   cpCite("where α = 0.15 is the Q-table learning rate, R_accumulated = Σ_{t=0}^{k-1} r_t is the total reward accumulated across all k primitive action steps during option o execution, γ_H = 0.9 is the high-level discount factor, and s, s' are the discrete state tuples before and after option execution. The max_o' term bootstraps the future value from the greedy macro-goal available at the terminating state s', enabling the high-level policy to evaluate the long-term strategic value of macro-goal assignments.", [4, 6]),
 
   subHd("3.7.3 Low-Level DQN Loss and Gradient Update"),
   cpCite("The low-level DQN policy network is trained by minimizing the temporal difference error. For a mini-batch of 64 transitions sampled from the experience replay buffer, the DQN loss is:", [6, 14]),
-  cpBold("      L(θ) = E_{(s,a,r,s',d) ~ D} [ (y - Q_θ(s, a))² ]"),
+  cpFormula(new DocxMath({
+    children: [
+      new MathRun("L(θ) = E"),
+      new MathSubScript({
+        children: [new MathRun("")],
+        subScript: [new MathRun("(s,a,r,s',d) ~ D")]
+      }),
+      new MathRun(" [ (y - "),
+      new MathSubScript({
+        children: [new MathRun("Q")],
+        subScript: [new MathRun("θ")]
+      }),
+      new MathSuperScript({
+        children: [new MathRun("(s, a))")],
+        superScript: [new MathRun("2")]
+      }),
+      new MathRun(" ]")
+    ]
+  })),
   cpCite("where the target value y is computed using the target network Q_{θ'}: y = r + γ_L · max_{a'} Q_{θ'}(s', a') · (1 - d), γ_L = 0.95 is the low-level discount factor, d ∈ {0,1} is the done flag, Q_θ is the online policy network, and Q_{θ'} is the target network with parameters θ' periodically copied from θ every 5 training episodes. The Adam optimizer with learning rate 1e-3 minimizes L(θ) through gradient descent on the policy network parameters θ.", [6, 14]),
 
   subHd("3.7.4 BFS Shortest-Path Navigation"),
@@ -953,11 +1045,91 @@ const ch3 = [
 
   subHd("3.7.5 Gradient Saliency Attribution"),
   cpCite("For the low-level DQN policy network Q_θ with input state vector s = (dx, dy, battery, fov_0, ..., fov_8) ∈ R^12, the gradient saliency for the greedy action a* = argmax_a Q_θ(s, a) is computed as:", [6, 8]),
-  cpBold("      saliency_j = |∂Q_θ(s, a*) / ∂s_j|  for j = 0, 1, ..., 11"),
+  cpFormula(new DocxMath({
+    children: [
+      new MathSubScript({
+        children: [new MathRun("saliency")],
+        subScript: [new MathRun("j")]
+      }),
+      new MathRun(" = |"),
+      new MathFraction({
+        numerator: [
+          new MathRun("∂"),
+          new MathSubScript({
+            children: [new MathRun("Q")],
+            subScript: [new MathRun("θ")]
+          }),
+          new MathSuperScript({
+            children: [new MathRun("(s, a")],
+            superScript: [new MathRun("*")]
+          }),
+          new MathRun(")")
+        ],
+        denominator: [
+          new MathRun("∂"),
+          new MathSubScript({
+            children: [new MathRun("s")],
+            subScript: [new MathRun("j")]
+          })
+        ]
+      }),
+      new MathRun("|  for j = 0, 1, ..., 11")
+    ]
+  })),
   cpCite("The 12 gradient magnitudes are grouped into three semantic feature categories:", [4, 6]),
-  cpBold("      W_target = saliency_0 + saliency_1   (sub-goal direction dx, dy)"),
-  cpBold("      W_battery = saliency_2               (battery level)"),
-  cpBold("      W_hazards = Σ_{j=3}^{11} saliency_j  (3×3 local grid FOV cells)"),
+  cpFormula(new DocxMath({
+    children: [
+      new MathSubScript({
+        children: [new MathRun("W")],
+        subScript: [new MathRun("target")]
+      }),
+      new MathRun(" = "),
+      new MathSubScript({
+        children: [new MathRun("saliency")],
+        subScript: [new MathRun("0")]
+      }),
+      new MathRun(" + "),
+      new MathSubScript({
+        children: [new MathRun("saliency")],
+        subScript: [new MathRun("1")]
+      }),
+      new MathRun("   (sub-goal direction dx, dy)")
+    ]
+  })),
+  cpFormula(new DocxMath({
+    children: [
+      new MathSubScript({
+        children: [new MathRun("W")],
+        subScript: [new MathRun("battery")]
+      }),
+      new MathRun(" = "),
+      new MathSubScript({
+        children: [new MathRun("saliency")],
+        subScript: [new MathRun("2")]
+      }),
+      new MathRun("               (battery level)")
+    ]
+  })),
+  cpFormula(new DocxMath({
+    children: [
+      new MathSubScript({
+        children: [new MathRun("W")],
+        subScript: [new MathRun("hazards")]
+      }),
+      new MathRun(" = "),
+      new MathSum({
+        subScript: [new MathRun("j=3")],
+        superScript: [new MathRun("11")],
+        children: [
+          new MathSubScript({
+            children: [new MathRun("saliency")],
+            subScript: [new MathRun("j")]
+          })
+        ]
+      }),
+      new MathRun("  (3×3 local grid FOV cells)")
+    ]
+  })),
   cpCite("The percentage attribution scores are computed as: P_k = (W_k / (W_target + W_battery + W_hazards + ε)) × 100% for k ∈ {target, battery, hazards}, where ε = 1e-6 prevents division by zero. The final percentages are adjusted so they sum exactly to 100% by adding the rounding residual to P_target. These attribution percentages are transmitted to the dashboard and displayed as a bar chart visualization alongside the agent's current decision.", [4, 6]),
 
   secHd("3.8 Technologies Used"),
@@ -975,14 +1147,14 @@ const ch3 = [
     width: { size: CW, type: WidthType.DXA },
     columnWidths: [Math.floor(CW * 0.35), Math.floor(CW * 0.65)],
     rows: [
-      new TableRow({ children: [tc("Component", true, Math.floor(CW * 0.35)), tc("Specification", true, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("Operating System", false, Math.floor(CW * 0.35)), tc("Windows 10/11 (64-bit) or Ubuntu 20.04+ LTS", false, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("Programming Language", false, Math.floor(CW * 0.35)), tc("Python 3.10 or higher", false, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("Deep Learning Framework", false, Math.floor(CW * 0.35)), tc("PyTorch 2.x (CPU or CUDA variant)", false, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("Scientific Computing", false, Math.floor(CW * 0.35)), tc("NumPy 1.24+", false, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("Dashboard Browser", false, Math.floor(CW * 0.35)), tc("Google Chrome 110+ or Microsoft Edge 110+", false, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("IDE", false, Math.floor(CW * 0.35)), tc("Visual Studio Code or PyCharm", false, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("Version Control", false, Math.floor(CW * 0.35)), tc("Git 2.x", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("Component", true, Math.floor(CW * 0.35)), tdc("Specification", true, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("Operating System", false, Math.floor(CW * 0.35)), tdc("Windows 10/11 (64-bit) or Ubuntu 20.04+ LTS", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("Programming Language", false, Math.floor(CW * 0.35)), tdc("Python 3.10 or higher", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("Deep Learning Framework", false, Math.floor(CW * 0.35)), tdc("PyTorch 2.x (CPU or CUDA variant)", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("Scientific Computing", false, Math.floor(CW * 0.35)), tdc("NumPy 1.24+", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("Dashboard Browser", false, Math.floor(CW * 0.35)), tdc("Google Chrome 110+ or Microsoft Edge 110+", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("IDE", false, Math.floor(CW * 0.35)), tdc("Visual Studio Code or PyCharm", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("Version Control", false, Math.floor(CW * 0.35)), tdc("Git 2.x", false, Math.floor(CW * 0.65))] }),
     ]
   }),
   el(),
@@ -993,12 +1165,12 @@ const ch3 = [
     width: { size: CW, type: WidthType.DXA },
     columnWidths: [Math.floor(CW * 0.35), Math.floor(CW * 0.65)],
     rows: [
-      new TableRow({ children: [tc("Component", true, Math.floor(CW * 0.35)), tc("Specification", true, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("Processor", false, Math.floor(CW * 0.35)), tc("Intel Core i5 8th Gen / AMD Ryzen 5 or equivalent", false, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("RAM", false, Math.floor(CW * 0.35)), tc("8 GB minimum (16 GB recommended for smooth training)", false, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("Storage", false, Math.floor(CW * 0.35)), tc("1 GB free disk space for code, weights, and logs", false, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("GPU (Optional)", false, Math.floor(CW * 0.35)), tc("NVIDIA CUDA-compatible GPU for accelerated DQN training", false, Math.floor(CW * 0.65))] }),
-      new TableRow({ children: [tc("Network", false, Math.floor(CW * 0.35)), tc("Localhost (127.0.0.1:8000) for dashboard access", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("Component", true, Math.floor(CW * 0.35)), tdc("Specification", true, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("Processor", false, Math.floor(CW * 0.35)), tdc("Intel Core i5 8th Gen / AMD Ryzen 5 or equivalent", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("RAM", false, Math.floor(CW * 0.35)), tdc("8 GB minimum (16 GB recommended for smooth training)", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("Storage", false, Math.floor(CW * 0.35)), tdc("1 GB free disk space for code, weights, and logs", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("GPU (Optional)", false, Math.floor(CW * 0.35)), tdc("NVIDIA CUDA-compatible GPU for accelerated DQN training", false, Math.floor(CW * 0.65))] }),
+      new TableRow({ children: [tdc("Network", false, Math.floor(CW * 0.35)), tdc("Localhost (127.0.0.1:8000) for dashboard access", false, Math.floor(CW * 0.65))] }),
     ]
   }),
   el(),
@@ -1028,20 +1200,20 @@ const ch4 = [
     width: { size: CW, type: WidthType.DXA },
     columnWidths: [Math.floor(CW * 0.45), Math.floor(CW * 0.25), Math.floor(CW * 0.30)],
     rows: [
-      new TableRow({ children: [tc("Parameter", true, Math.floor(CW * 0.45)), tcC("Value", true, Math.floor(CW * 0.25)), tc("Component", true, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Q-Table Learning Rate (alpha)", false, Math.floor(CW * 0.45)), tcC("0.15", false, Math.floor(CW * 0.25)), tc("High-Level Q-Table", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("High-Level Discount Factor (gamma_H)", false, Math.floor(CW * 0.45)), tcC("0.90", false, Math.floor(CW * 0.25)), tc("High-Level Q-Table", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Initial Epsilon (both levels)", false, Math.floor(CW * 0.45)), tcC("0.15", false, Math.floor(CW * 0.25)), tc("Both Levels", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Epsilon Decay Schedule", false, Math.floor(CW * 0.45)), tcC("max(0.05, 0.15×0.95^(ep/10))", false, Math.floor(CW * 0.25)), tc("Both Levels", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Minimum Epsilon", false, Math.floor(CW * 0.45)), tcC("0.05", false, Math.floor(CW * 0.25)), tc("Both Levels", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("DQN Learning Rate (Adam)", false, Math.floor(CW * 0.45)), tcC("1e-3", false, Math.floor(CW * 0.25)), tc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Low-Level Discount Factor (gamma_L)", false, Math.floor(CW * 0.45)), tcC("0.95", false, Math.floor(CW * 0.25)), tc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Experience Replay Buffer Size", false, Math.floor(CW * 0.45)), tcC("5,000 transitions", false, Math.floor(CW * 0.25)), tc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Mini-Batch Size", false, Math.floor(CW * 0.45)), tcC("64", false, Math.floor(CW * 0.25)), tc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Target Network Update Interval", false, Math.floor(CW * 0.45)), tcC("Every 5 episodes", false, Math.floor(CW * 0.25)), tc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("DQN Architecture", false, Math.floor(CW * 0.45)), tcC("12 → 64 → 64 → 5", false, Math.floor(CW * 0.25)), tc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Activation Function", false, Math.floor(CW * 0.45)), tcC("ReLU", false, Math.floor(CW * 0.25)), tc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Training Episodes", false, Math.floor(CW * 0.45)), tcC("50", false, Math.floor(CW * 0.25)), tc("Training Script", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Parameter", true, Math.floor(CW * 0.45)), tdcC("Value", true, Math.floor(CW * 0.25)), tdc("Component", true, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Q-Table Learning Rate (alpha)", false, Math.floor(CW * 0.45)), tdcC("0.15", false, Math.floor(CW * 0.25)), tdc("High-Level Q-Table", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("High-Level Discount Factor (gamma_H)", false, Math.floor(CW * 0.45)), tdcC("0.90", false, Math.floor(CW * 0.25)), tdc("High-Level Q-Table", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Initial Epsilon (both levels)", false, Math.floor(CW * 0.45)), tdcC("0.15", false, Math.floor(CW * 0.25)), tdc("Both Levels", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Epsilon Decay Schedule", false, Math.floor(CW * 0.45)), tdcC("max(0.05, 0.15×0.95^(ep/10))", false, Math.floor(CW * 0.25)), tdc("Both Levels", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Minimum Epsilon", false, Math.floor(CW * 0.45)), tdcC("0.05", false, Math.floor(CW * 0.25)), tdc("Both Levels", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("DQN Learning Rate (Adam)", false, Math.floor(CW * 0.45)), tdcC("1e-3", false, Math.floor(CW * 0.25)), tdc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Low-Level Discount Factor (gamma_L)", false, Math.floor(CW * 0.45)), tdcC("0.95", false, Math.floor(CW * 0.25)), tdc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Experience Replay Buffer Size", false, Math.floor(CW * 0.45)), tdcC("5,000 transitions", false, Math.floor(CW * 0.25)), tdc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Mini-Batch Size", false, Math.floor(CW * 0.45)), tdcC("64", false, Math.floor(CW * 0.25)), tdc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Target Network Update Interval", false, Math.floor(CW * 0.45)), tdcC("Every 5 episodes", false, Math.floor(CW * 0.25)), tdc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("DQN Architecture", false, Math.floor(CW * 0.45)), tdcC("12 → 64 → 64 → 5", false, Math.floor(CW * 0.25)), tdc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Activation Function", false, Math.floor(CW * 0.45)), tdcC("ReLU", false, Math.floor(CW * 0.25)), tdc("Low-Level DQN", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Training Episodes", false, Math.floor(CW * 0.45)), tdcC("50", false, Math.floor(CW * 0.25)), tdc("Training Script", false, Math.floor(CW * 0.30))] }),
     ]
   }),
   el(),
@@ -1052,20 +1224,20 @@ const ch4 = [
     width: { size: CW, type: WidthType.DXA },
     columnWidths: [Math.floor(CW * 0.50), Math.floor(CW * 0.50)],
     rows: [
-      new TableRow({ children: [tc("Environment Parameter", true, Math.floor(CW * 0.50)), tc("Value", true, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Grid dimensions", false, Math.floor(CW * 0.50)), tc("15 × 15 cells (225 total cells)", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Number of heterogeneous agents", false, Math.floor(CW * 0.50)), tc("3 (2 Drones A1/A2 + 1 Rescue Rover A3)", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Drone initial positions", false, Math.floor(CW * 0.50)), tc("A1: [0,0], A2: [0,14] (opposite top corners)", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Rover initial position", false, Math.floor(CW * 0.50)), tc("A3: [14, 7] (bottom center)", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Number of victims", false, Math.floor(CW * 0.50)), tc("3 (hidden → scanned → rescued lifecycle)", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Number of debris obstacles", false, Math.floor(CW * 0.50)), tc("10 (randomly spawned in rows 2–12)", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Number of initial fire seeds", false, Math.floor(CW * 0.50)), tc("2 (randomly spawned in rows 3–11)", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Fire spread interval", false, Math.floor(CW * 0.50)), tc("Every 7 timesteps", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Fire spread probability", false, Math.floor(CW * 0.50)), tc("18% per adjacent empty cell", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Agent battery capacity", false, Math.floor(CW * 0.50)), tc("100 units per agent", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Agent field of view", false, Math.floor(CW * 0.50)), tc("3×3 cells centered on agent position", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Maximum steps per episode", false, Math.floor(CW * 0.50)), tc("150 timesteps", false, Math.floor(CW * 0.50))] }),
-      new TableRow({ children: [tc("Charge station positions", false, Math.floor(CW * 0.50)), tc("[0,7] and [14,7] (fixed)", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Environment Parameter", true, Math.floor(CW * 0.50)), tdc("Value", true, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Grid dimensions", false, Math.floor(CW * 0.50)), tdc("15 × 15 cells (225 total cells)", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Number of heterogeneous agents", false, Math.floor(CW * 0.50)), tdc("3 (2 Drones A1/A2 + 1 Rescue Rover A3)", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Drone initial positions", false, Math.floor(CW * 0.50)), tdc("A1: [0,0], A2: [0,14] (opposite top corners)", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Rover initial position", false, Math.floor(CW * 0.50)), tdc("A3: [14, 7] (bottom center)", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Number of victims", false, Math.floor(CW * 0.50)), tdc("3 (hidden → scanned → rescued lifecycle)", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Number of debris obstacles", false, Math.floor(CW * 0.50)), tdc("10 (randomly spawned in rows 2–12)", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Number of initial fire seeds", false, Math.floor(CW * 0.50)), tdc("2 (randomly spawned in rows 3–11)", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Fire spread interval", false, Math.floor(CW * 0.50)), tdc("Every 7 timesteps", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Fire spread probability", false, Math.floor(CW * 0.50)), tdc("18% per adjacent empty cell", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Agent battery capacity", false, Math.floor(CW * 0.50)), tdc("100 units per agent", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Agent field of view", false, Math.floor(CW * 0.50)), tdc("3×3 cells centered on agent position", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Maximum steps per episode", false, Math.floor(CW * 0.50)), tdc("150 timesteps", false, Math.floor(CW * 0.50))] }),
+      new TableRow({ children: [tdc("Charge station positions", false, Math.floor(CW * 0.50)), tdc("[0,7] and [14,7] (fixed)", false, Math.floor(CW * 0.50))] }),
     ]
   }),
   el(),
@@ -1103,13 +1275,13 @@ const ch4 = [
     width: { size: CW, type: WidthType.DXA },
     columnWidths: [Math.floor(CW * 0.40), Math.floor(CW * 0.30), Math.floor(CW * 0.30)],
     rows: [
-      new TableRow({ children: [tc("Metric", true, Math.floor(CW * 0.40)), tcC("EMARL-SAR (HRL+BFS)", true, Math.floor(CW * 0.30)), tcC("Flat DQN Baseline", true, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Rescue Success Rate (3/3 victims)", false, Math.floor(CW * 0.40)), tcC("66–100%", false, Math.floor(CW * 0.30)), tcC("0–33%", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Partial Success (≥1 victim rescued)", false, Math.floor(CW * 0.40)), tcC("100%", false, Math.floor(CW * 0.30)), tcC("33–66%", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Average Steps to Completion", false, Math.floor(CW * 0.40)), tcC("85–120 steps", false, Math.floor(CW * 0.30)), tcC("130–150 steps", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Agent Survival Rate", false, Math.floor(CW * 0.40)), tcC("67–100%", false, Math.floor(CW * 0.30)), tcC("33–67%", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Battery Efficiency (avg remaining)", false, Math.floor(CW * 0.40)), tcC("30–55 units", false, Math.floor(CW * 0.30)), tcC("5–20 units", false, Math.floor(CW * 0.30))] }),
-      new TableRow({ children: [tc("Explanation Generation Success", false, Math.floor(CW * 0.40)), tcC("100%", false, Math.floor(CW * 0.30)), tcC("N/A", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Metric", true, Math.floor(CW * 0.40)), tdcC("EMARL-SAR (HRL+BFS)", true, Math.floor(CW * 0.30)), tdcC("Flat DQN Baseline", true, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Rescue Success Rate (3/3 victims)", false, Math.floor(CW * 0.40)), tdcC("66–100%", false, Math.floor(CW * 0.30)), tdcC("0–33%", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Partial Success (≥1 victim rescued)", false, Math.floor(CW * 0.40)), tdcC("100%", false, Math.floor(CW * 0.30)), tdcC("33–66%", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Average Steps to Completion", false, Math.floor(CW * 0.40)), tdcC("85–120 steps", false, Math.floor(CW * 0.30)), tdcC("130–150 steps", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Agent Survival Rate", false, Math.floor(CW * 0.40)), tdcC("67–100%", false, Math.floor(CW * 0.30)), tdcC("33–67%", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Battery Efficiency (avg remaining)", false, Math.floor(CW * 0.40)), tdcC("30–55 units", false, Math.floor(CW * 0.30)), tdcC("5–20 units", false, Math.floor(CW * 0.30))] }),
+      new TableRow({ children: [tdc("Explanation Generation Success", false, Math.floor(CW * 0.40)), tdcC("100%", false, Math.floor(CW * 0.30)), tdcC("N/A", false, Math.floor(CW * 0.30))] }),
     ]
   }),
   el(),
