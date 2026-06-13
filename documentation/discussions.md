@@ -1,65 +1,76 @@
-Given your constraints—a **₹2000 budget**, **limited time** due to a full-time job, and the need for **M.Tech-level academic rigor**—the strategy is to rely on **100% free, software-based simulations** and utilize free cloud computing (like Google Colab). 
+Given your constraints—a **₹2000 budget**, **limited time** due to a full-time job, and the need for **M.Tech-level academic rigor**—the strategy is to rely on **100% free, software-based simulations** and utilize free cloud computing (like Google Colab).
 
 To meet the M.Tech standard without spending months on coding or requiring heavy computing power, you should focus on a **conceptually complex but computationally lightweight** environment.
 
 Here is the perfect project that balances these constraints:
 
-### **Project Title:** 
-**"Explainable Multi-Agent Hierarchical Reinforcement Learning for Cooperative Search and Rescue in Dynamic Grids"**
+### **Project Title:**
+
+**"Hierarchical Reinforcement Learning and Explainable Al for Multi - Agent Autonomous Decision Systems"**
 
 ### **Why this fits your situation perfectly:**
-1. **Cost:** ₹0. You will use open-source Python libraries and train the model on Google Colab's free GPU. 
+
+1. **Cost:** ₹0. You will use open-source Python libraries and train the model on Google Colab's free GPU.
 2. **Time-Efficient:** You won't waste time building physics engines. You will use pre-built grid environments and focus entirely on implementing the AI algorithms.
-3. **M.Tech Rigor:** Even though it’s a grid simulation, the *math* and *analysis* are advanced. You will perfectly replicate the paper’s methodology by comparing standard MARL vs. Hierarchical MARL, and generating accuracy, loss, and explainability metrics.
+3. **M.Tech Rigor:** Even though it’s a grid simulation, the _math_ and _analysis_ are advanced. You will perfectly replicate the paper’s methodology by comparing standard MARL vs. Hierarchical MARL, and generating accuracy, loss, and explainability metrics.
 
 ---
 
 ### **Project Architecture & Workflow**
 
 #### **1. The Environment (The "Search and Rescue" Grid)**
-Instead of complex 3D cars, use a 2D discrete grid. 
-*   **Scenario:** A 20x20 grid representing a disaster zone. There are 3 "Drone" agents, randomly spawned obstacles, and multiple "Targets" (victims) to find. 
-*   **The Catch:** Drones have a limited battery and limited field of view (they can only see 3 blocks ahead). They must coordinate so they don't search the same area twice.
-*   **Tools:** Use **PettingZoo** (a standard, free Python library for multi-agent environments). You can modify their pre-built `multi_agent_particle_envs`.
+
+Instead of complex 3D cars, use a 2D discrete grid.
+
+- **Scenario:** A 20x20 grid representing a disaster zone. There are 3 "Drone" agents, randomly spawned obstacles, and multiple "Targets" (victims) to find.
+- **The Catch:** Drones have a limited battery and limited field of view (they can only see 3 blocks ahead). They must coordinate so they don't search the same area twice.
+- **Tools:** Use **PettingZoo** (a standard, free Python library for multi-agent environments). You can modify their pre-built `multi_agent_particle_envs`.
 
 #### **2. The Hierarchical Reinforcement Learning (HRL) Model**
-You will build a two-layer neural network system using **Stable Baselines3** or **Ray RLlib** (both have excellent documentation, saving you weeks of coding):
-*   **High-Level Policy (Macro):** Divides the grid. Agent 1 gets the top-left quadrant, Agent 2 gets the bottom-right, etc.
-*   **Low-Level Policy (Micro):** Moves the drone one step at a time (Up, Down, Left, Right) to avoid obstacles and reach targets within its assigned quadrant.
 
-#### **3. The Explainability Module (XAI) - *The crucial part for your thesis***
+You will build a two-layer neural network system using **Stable Baselines3** or **Ray RLlib** (both have excellent documentation, saving you weeks of coding):
+
+- **High-Level Policy (Macro):** Divides the grid. Agent 1 gets the top-left quadrant, Agent 2 gets the bottom-right, etc.
+- **Low-Level Policy (Micro):** Moves the drone one step at a time (Up, Down, Left, Right) to avoid obstacles and reach targets within its assigned quadrant.
+
+#### **3. The Explainability Module (XAI) - _The crucial part for your thesis_**
+
 Since you don't have time to build complex custom XAI algorithms, use powerful off-the-shelf Python libraries to explain the Deep Learning model:
-*   **SHAP (SHapley Additive exPlanations):** Feed the trained RL model into the free SHAP library. It will automatically generate beautiful graphs showing *why* an agent moved left (e.g., "70% due to an obstacle ahead, 30% due to a target to the left"). 
-*   **Decision Tree Extraction:** Train a simple, interpretable Decision Tree (using `scikit-learn`) on the outputs of your complex RL model. This acts as the "Justification of Action" mentioned in the paper.
+
+- **SHAP (SHapley Additive exPlanations):** Feed the trained RL model into the free SHAP library. It will automatically generate beautiful graphs showing _why_ an agent moved left (e.g., "70% due to an obstacle ahead, 30% due to a target to the left").
+- **Decision Tree Extraction:** Train a simple, interpretable Decision Tree (using `scikit-learn`) on the outputs of your complex RL model. This acts as the "Justification of Action" mentioned in the paper.
 
 ---
 
 ### **Execution Plan (How to do this part-time)**
 
-*   **Week 1-2: Setup & Baseline**
-    *   Install Python, PettingZoo, and Stable Baselines3 on your laptop (or Google Colab).
-    *   Load a basic multi-agent environment and train a standard (non-hierarchical) Deep Q-Network (DQN). Save the results (this is your baseline).
-*   **Week 3-4: Implement Hierarchy (HRL)**
-    *   Modify the code so the agents select a "target sector" first, then navigate to it. Train this and compare the rewards against the baseline. You will see HRL learns faster (this forms the core of your thesis results).
-*   **Week 5-6: Add Explainability**
-    *   Install the `shap` library. Extract the feature importance from your model. Generate "Policy Transparency" graphs (like Fig. 2 in the paper).
-*   **Week 7-8: Documentation & Plotting**
-    *   Create the exact tables shown in the paper: Accuracy/Precision tables, Task Completion tables, and Training vs. Validation Loss graphs using `matplotlib`.
+- **Week 1-2: Setup & Baseline**
+  - Install Python, PettingZoo, and Stable Baselines3 on your laptop (or Google Colab).
+  - Load a basic multi-agent environment and train a standard (non-hierarchical) Deep Q-Network (DQN). Save the results (this is your baseline).
+- **Week 3-4: Implement Hierarchy (HRL)**
+  - Modify the code so the agents select a "target sector" first, then navigate to it. Train this and compare the rewards against the baseline. You will see HRL learns faster (this forms the core of your thesis results).
+- **Week 5-6: Add Explainability**
+  - Install the `shap` library. Extract the feature importance from your model. Generate "Policy Transparency" graphs (like Fig. 2 in the paper).
+- **Week 7-8: Documentation & Plotting**
+  - Create the exact tables shown in the paper: Accuracy/Precision tables, Task Completion tables, and Training vs. Validation Loss graphs using `matplotlib`.
 
 ### **What you will put in your M.Tech Thesis:**
+
 Your thesis won't be about having flashy 3D graphics. It will be an academic study showing:
+
 1.  **Proof of Efficiency:** A graph showing your HRL model completed the Search & Rescue task with 15% less battery usage than standard MARL.
 2.  **Proof of Explainability:** SHAP summary plots proving that the agents are making logical decisions based on sensor inputs, solving the "black-box" problem.
 3.  **Confusion Matrix:** Showing the accuracy of coordinated vs. non-coordinated actions (just like Fig. 3 in the paper).
 
 **Summary of Costs:**
-*   Software: Free (Python, PyTorch, PettingZoo).
-*   Compute: Free (Google Colab).
-*   Your ₹2000 budget remains unspent, or can be used to buy a premium Medium/TowardsDataScience subscription for a month to read premium tutorials on MARL and SHAP implementation.
 
-----------------------------------------------------------------------------
+- Software: Free (Python, PyTorch, PettingZoo).
+- Compute: Free (Google Colab).
+- Your ₹2000 budget remains unspent, or can be used to buy a premium Medium/TowardsDataScience subscription for a month to read premium tutorials on MARL and SHAP implementation.
 
-### **"Explainable Multi-Agent Hierarchical Reinforcement Learning for Cooperative Search and Rescue in Dynamic Grids"**
+---
+
+### **"Hierarchical Reinforcement Learning and Explainable Al for Multi - Agent Autonomous Decision Systems"**
 
 Here is exactly how you can build this "cool" version of the project while keeping it part-time friendly and under your ₹2000 budget:
 

@@ -326,7 +326,7 @@ const preliminary = [
   // DECLARATION
   chHd("DECLARATION"),
   el(),
-  cp("I, Srinivas Rao Tammireddy, Roll No. 23R21A0501, pursuing M.Tech in Computer Science and Engineering at Marri Laxman Reddy Institute of Technology and Management, Dundigal, Hyderabad, hereby declare that the mini project report titled \"Explainable Multi-Agent Hierarchical Reinforcement Learning for Cooperative Search and Rescue in Dynamic Grids\" submitted in partial fulfillment of the requirements for the award of the degree of Master of Technology is a record of my original work carried out under the supervision of Dr. S. Pratap Singh, Professor, Department of Computer Science and Engineering."),
+  cp("I, Srinivas Rao Tammireddy, Roll No. 23R21A0501, pursuing M.Tech in Computer Science and Engineering at Marri Laxman Reddy Institute of Technology and Management, Dundigal, Hyderabad, hereby declare that the mini project report titled \"Hierarchical Reinforcement Learning and Explainable Al for Multi - Agent Autonomous Decision Systems\" submitted in partial fulfillment of the requirements for the award of the degree of Master of Technology is a record of my original work carried out under the supervision of Dr. S. Pratap Singh, Professor, Department of Computer Science and Engineering."),
   cp("I further declare that this project report has not been submitted elsewhere, in part or in full, for the award of any other degree or diploma in any university or institution. All sources of information and references used in this work have been duly acknowledged. Any resemblance to any previously published work is purely coincidental and unintentional."),
   cp("The work presented in this project report is genuine, original, and has been completed under the academic and research guidance provided by the faculty of the Department of Computer Science and Engineering, Marri Laxman Reddy Institute of Technology and Management."),
   el(), el(), el(),
@@ -344,7 +344,7 @@ const preliminary = [
   // CERTIFICATE
   chHd("CERTIFICATE"),
   el(),
-  cp("This is to certify that the mini project report titled \"Explainable Multi-Agent Hierarchical Reinforcement Learning for Cooperative Search and Rescue in Dynamic Grids\" submitted by Srinivas Rao Tammireddy (Roll No: 23R21A0501) in partial fulfillment of the requirements for the award of the degree of Master of Technology in Computer Science and Engineering at Marri Laxman Reddy Institute of Technology and Management, Dundigal, Hyderabad, is a record of original and independent work carried out by the candidate under my supervision and guidance."),
+  cp("This is to certify that the mini project report titled \"Hierarchical Reinforcement Learning and Explainable Al for Multi - Agent Autonomous Decision Systems\" submitted by Srinivas Rao Tammireddy (Roll No: 23R21A0501) in partial fulfillment of the requirements for the award of the degree of Master of Technology in Computer Science and Engineering at Marri Laxman Reddy Institute of Technology and Management, Dundigal, Hyderabad, is a record of original and independent work carried out by the candidate under my supervision and guidance."),
   cp("To the best of my knowledge, the work presented in this project report is genuine and original. No part of this report has been submitted previously for the award of any other degree or diploma in any university or institution. The candidate has fulfilled all requirements as per the guidelines of the Jawaharlal Nehru Technological University, Hyderabad."),
   cp("I recommend this project report to be placed before the examination committee for evaluation and approval."),
   el(), el(), el(),
@@ -1273,7 +1273,7 @@ const doc = new Document({
           ...pageProps.page,
           pageNumbers: {
             start: 1,
-            formatType: NumberFormat.LOWER_ROMAN,
+            formatType: NumberFormat.UPPER_ROMAN,
           }
         },
         differentFirstPageHeaderFooter: true,

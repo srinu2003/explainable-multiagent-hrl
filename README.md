@@ -1,4 +1,4 @@
-# Explainable Multi-Agent Hierarchical Reinforcement Learning for Cooperative Search and Rescue in Dynamic Grids
+# Hierarchical Reinforcement Learning and Explainable Al for Multi - Agent Autonomous Decision Systems
 
 This repository implements an explainable multi-agent hierarchical reinforcement learning (HRL) framework optimized for cooperative search-and-rescue operations in dynamic grid environments.
 
@@ -28,7 +28,7 @@ Start the local HTTP API and web server:
 python src/server.py
 ```
 
-By default, the server runs on `http://localhost:8000`. 
+By default, the server runs on `http://localhost:8000`.
 
 To open the interactive dashboard, open your web browser and navigate to:
 👉 **[http://localhost:8000/HTML-DEMO/live_demo.html](http://localhost:8000/HTML-DEMO/live_demo.html)**
