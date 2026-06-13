@@ -1,5 +1,6 @@
 # Word internal document
 ~$*.docx
+~*.tmp
 unpacked/
 
 # Python

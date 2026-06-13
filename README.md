@@ -1,4 +1,4 @@
-# EMARL-SAR: Explainable Multi-Agent Hierarchical Reinforcement Learning
+# Explainable Multi-Agent Hierarchical Reinforcement Learning for Cooperative Search and Rescue in Dynamic Grids
 
 This repository implements an explainable multi-agent hierarchical reinforcement learning (HRL) framework optimized for cooperative search-and-rescue operations in dynamic grid environments.
 
