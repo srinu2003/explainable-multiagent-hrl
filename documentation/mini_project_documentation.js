@@ -479,6 +479,9 @@ const preliminary = [
       new TableRow({ children: [tcC("3.4", false, 1000), tc("SMDP Training Loop", false, CW - 2200), tcPageRef("fig_3_4", false, 1200)] }),
       new TableRow({ children: [tcC("3.5", false, 1000), tc("Environment State Diagram", false, CW - 2200), tcPageRef("fig_3_5", false, 1200)] }),
       new TableRow({ children: [tcC("3.6", false, 1000), tc("Agent Decision and Navigation Flow", false, CW - 2200), tcPageRef("fig_3_6", false, 1200)] }),
+      new TableRow({ children: [tcC("4.1", false, 1000), tc("Live Dashboard Grid Visualization during Active Simulation", false, CW - 2200), tcPageRef("fig_4_1", false, 1200)] }),
+      new TableRow({ children: [tcC("4.2", false, 1000), tc("Real-Time Explanation Log Feed", false, CW - 2200), tcPageRef("fig_4_2", false, 1200)] }),
+      new TableRow({ children: [tcC("4.3", false, 1000), tc("PyTorch Gradient Saliency Attribution Bars", false, CW - 2200), tcPageRef("fig_4_3", false, 1200)] }),
     ]
   }),
   pb(),
@@ -1083,12 +1086,15 @@ const ch4 = [
   subHd("4.4.1 Live Dashboard Grid Visualization"),
   cpCite("The EMARL-SAR live dashboard renders the 15×15 grid as a color-coded canvas with distinct visual representations for each cell type and entity. Empty cells are rendered in light gray, debris obstacles in brown/orange, fire cells in red with animated visual cues, and charge station cells in light blue. Drone agents A1 and A2 are displayed as blue circular icons with battery percentage indicators, while rover A3 is displayed as a green rectangular icon. Victims in 'hidden' status are not displayed (unknown to agents), scanned victims appear as yellow star markers, and rescued victims are shown as faded green icons. The exploration fog-of-war overlay is applied over unexplored cells, reflecting the partial observability constraint.", [9, 15]),
   cpCite("Sub-goal waypoints for each agent are displayed as thin colored lines connecting the agent's current position to its assigned macro-goal coordinates, providing visual confirmation of the high-level policy's current task assignments. The dashboard updates at each simulation step, clearly showing agent movement trajectories, the progressive spread of fire, and the gradual exploration of previously unexplored grid sectors.", [6, 9]),
+  ...loadDiagram("screenshot_grid.png", 450, 450, "Live Dashboard Grid Visualization during Active Simulation", "4.1"),
 
   subHd("4.4.2 Explanation Log Panel"),
   cpCite("The explanation log panel displays a scrolling feed of explanation entries categorized by type (high_level displayed in blue, low_level displayed in green) and agent (A1, A2, A3). Each entry includes the generating agent's identifier, the explanation type label, and the complete explanation text. High-level entries appear infrequently, only when an agent completes or abandons a sub-goal and requests a new macro-goal assignment, while low-level entries appear at every simulation step for all active agents. Sample high-level explanation: '[High-Level Plan for Drone 1 (Scout)] Reason: Prioritizing exploration of the South-East sector. | Status: Agent battery is at 87%. (Coordinating search sectors with Rover 3 (Rescuer) heading to [8, 11]).' Sample low-level explanation: 'Drone A1 selected action Move SOUTH, reducing vertical distance to sub-goal at [11, 11]. Avoiding hazards detected in directions: [EAST (Fire)].'", [6, 9]),
+  ...loadDiagram("screenshot_logs.png", 520, 130, "Real-Time Explanation Log Feed", "4.2"),
 
   subHd("4.4.3 Gradient Saliency Display"),
   cpCite("For each active agent, the dashboard displays the current gradient saliency attribution as three horizontal bar segments labeled Target Proximity, Battery Status, and Hazard Avoidance, with numerical percentage values. These bars update at each simulation step to reflect the changing feature importance as agents move through the grid, approach or recede from their sub-goals, deplete battery, and encounter or avoid hazard zones. Observable patterns include: Target Proximity dominance (60-80%) when agents are far from sub-goals with clear paths; Hazard Avoidance elevation (30-50%) when agents navigate in grid regions adjacent to fire cells; Battery Status elevation (15-25%) when agent battery levels drop below 40% and the high-level policy assigns charge station macro-goals.", [8, 14]),
+  ...loadDiagram("screenshot_saliency.png", 520, 240, "PyTorch Gradient Saliency Attribution Bars", "4.3"),
 
   secHd("4.5 Performance Evaluation"),
   cpCite("The framework performance is evaluated across four primary metrics: rescue success rate (percentage of victims rescued per episode), average steps to completion (number of timesteps to achieve all victim rescues or episode timeout), agent survival rate (percentage of agents that remain active at episode end), and battery efficiency (average remaining battery across all active agents at episode end). Table 4.3 presents the comparative results between the EMARL-SAR hierarchical framework and a flat DQN baseline that uses a single DQN policy without hierarchical decomposition, macro-goal assignment, or BFS assistance.", [6, 15]),
